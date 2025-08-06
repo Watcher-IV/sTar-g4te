@@ -1,40 +1,51 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Login</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - Sebastian</title>
   <style>
+    @font-face {
+      font-family: 'PixelFont';
+      src: url('pixel-font.ttf') format('truetype');
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
     body {
-      margin: 0;
-      padding: 0;
       background-color: #000000;
-      font-family: 'Courier New', monospace;
+      font-family: 'PixelFont', monospace;
       color: #d1d1d1;
       overflow: hidden;
     }
-
-    canvas {
+    canvas#dust {
       position: fixed;
-      top: 0;
-      left: 0;
-      z-index: 9999;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      z-index: 999;
       pointer-events: none;
     }
-
-    .login-container {
+    .container {
       position: absolute;
-      top: 50%;
-      left: 50%;
+      top: 50%; left: 50%;
       transform: translate(-50%, -50%);
-      padding: 40px;
-      background-color: #000;
+      z-index: 1;
+    }
+    .border-box {
       border: 12px solid transparent;
       border-image: url('border.png') 30 round;
-      z-index: 1;
-      filter: contrast(120%) saturate(80%) brightness(90%);
+      padding: 5px;
     }
-
-    input[type="text"], input[type="password"] {
+    .login-box {
+      background-color: rgba(0,0,0,0.85);
+      padding: 30px;
+      text-align: center;
+      filter: blur(0.5px);
+    }
+    .login-box h1 {
+      font-size: 18px;
+      margin-bottom: 20px;
+      filter: blur(0.6px);
+    }
+    input {
       display: block;
       width: 300px;
       margin: 10px auto;
@@ -42,100 +53,69 @@
       background: #111;
       border: 1px solid #444;
       color: #d1d1d1;
-      font-size: 16px;
-      font-family: 'Courier New', monospace;
-      text-shadow: 1px 1px #000;
-      image-rendering: pixelated;
+      font-size: 14px;
+      filter: blur(0.4px);
     }
-
-    .glitch-image {
+    #glitch-img {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      object-fit: cover;
-      z-index: 9998;
-      display: none;
+      top:0; left:0;
+      width:100vw; height:100vh;
+      object-fit:cover;
+      z-index:1000;
+      display:none;
     }
   </style>
 </head>
 <body>
   <canvas id="dust"></canvas>
-
-  <div class="login-container">
-    <form id="loginForm">
-      <input type="text" id="username" placeholder="Usuário">
-      <input type="password" id="password" placeholder="Senha">
-      <input type="submit" value="Entrar">
-    </form>
+  <img src="lingering.png" id="glitch-img" alt="glitch" />
+  <div class="container">
+    <div class="border-box">
+      <div class="login-box">
+        <h1>Bem vindo devolta, eu estava com saudade.</h1>
+        <input type="text" id="username" placeholder="Usuário" autocomplete="off" />
+        <input type="password" id="password" placeholder="Senha" autocomplete="off" />
+      </div>
+    </div>
   </div>
-
-  <img src="lingering.png" class="glitch-image" id="glitchImg">
-
   <script>
-    const form = document.getElementById('loginForm');
-    const glitchImg = document.getElementById('glitchImg');
-
-    const errosSinistros = [
-      "Você consegue me ver?",
-      "Sistema comprometido: **⸮#ƨⱯ⌐₴⟟∰𝖊⟬g̸̡̛̛̤͆̈́͌͘͜l̷͉̥̹̺̟͇̯̾ͅ!...",
-      "Algo está errado aqui, muito errado."
-    ];
-
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const user = document.getElementById('username').value;
-      const pass = document.getElementById('password').value;
-
-      if (user === 'Sebastian-IV' && pass === 'drownedstar2009') {
-        alert('Bem vindo devolta, eu estava com saudade.');
-        // Pode redirecionar para a próxima página aqui
-      } else {
-        const chance = Math.random();
-        if (chance < 0.2) {
-          glitchImg.style.display = 'block';
-          setTimeout(() => {
-            location.reload();
-          }, 1000);
-        } else {
-          const erroAleatorio = errosSinistros[Math.floor(Math.random() * errosSinistros.length)];
-          alert(erroAleatorio);
-        }
-      }
-    });
-
-    // Partículas (canvas)
+    // partículas
     const canvas = document.getElementById('dust');
     const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
     let particles = [];
+    for(let i=0;i<100;i++) particles.push({ x:Math.random()*canvas.width, y:Math.random()*canvas.height, r:Math.random()*2+0.5, d:Math.random()*0.5+0.2 });
+    function draw(){ ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle='rgba(255,255,255,0.1)';
+      particles.forEach(p=>{ ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,2*Math.PI); ctx.fill(); p.y -= p.d; if(p.y<0){p.y=canvas.height; p.x=Math.random()*canvas.width;} });
+      requestAnimationFrame(draw);
+    }
+    draw();
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    // login
+    const userOk='Sebastian-IV', passOk='drownedstar2009';
+    const errors=[
+      'Você consegue me ver?',
+      'Sistema comprometido: ⸮#ƨⱯ⌐₴⟟∰𝖊⟬g̸...',
+      ' **⸮#ƨⱯ⌐₴⟟∰𝖊⟬g̸̡̛̛̤͆̈́͌͘͜l̷͉̥̹̺̟͇̯̾ͅ!̶̨͕͍̪͖͚͓͉̦̥͚̀T̸̥̖̘͌̅͋̇̌̇͝C̷̤̠̺̙̥͍̤͍̠̓Ḥ̷̩̯͖̝͇̰̤̤̀̊̒%̸̡͕̘̺̳̥͜͝@̵̟̞̲̭̥̜̳̞͐̕!̵͕͓̪͕̼̖͙͍̰̥͐̆̏̇̕͜͝⧗𝙕𝚉𝔠𝘃⧚⸸̵̡̢̡̢̢̨̨̨̢̨̢̢̨̢̢̢̢̢̨̢̢̡̢̡̢͕̞̮̼͇̖̩̻̼̥͎̠̲̩̘̠̞̦̜̹̦̠̯̬̹̲̯̬̫͓̖̪͎̗̳̰̠͖̳͕̰̺̙͓̬͉̭̬̖͎̖̥̺̭͔̗̤̗͎͓̭͇̠͚̳̯̤̻̟̤͈̟̹̹̩̰̪̮̻̥̹̮̫͉͓̞̩̦̯̺̘̲̪͇̪̱̗̙̻͓͙̳̬̪͖̼̺̞̙̺̤̫̙̠̖̠͖̫̹͎̬͓̲͚͖̭̯̳͈͕̱̯͍̤̫͕͉̭͕͖̞̗̜̗͙̩̘̜̞͓̯͓̩͓̜̳͎͕̬͕̞͕̫͓̗͇̲̬̥̰̭̥̠̺̲̤̻̪͇̳̲̦̳̘͉͚̞̬͈̘̭̞̲̠̘͕̥͇̼̳͍̘̳͎̤͙̪͎̞̤̘̙͈͇̭̗͚̰̮͖̦̺̭͕̹̰̘̗͇̠̠̭͕̩͎̘̫͚͉͍͓̹͈͉͕̳̬̤͍̤͖͉̱̭̬̲͙̤͈̭̮͈̹̘̼͇̤̹͉͓̰̳̤̠̪̹̪̘͎͙̟̗̟̞͕̼̜̙͖͍̹͓̤͇͈̱̼͈̥̦̫̱͔̜̙̪̞͍͎̖̫̲͉̳̼͙̖̲̭̦̖̲̞̮̺̮͓͈̼̼̟͚̦͖͈̠͇̰̭͎̙̝̯̲͓͓̤̟̪̘̬̳̖̘̲̠̤̰̜͍̰͚͖͕͉͖͓͉̼̞̠̜̠̰͎̼̙̘̤̪̫̦̝̮͎̙̙̝̖̫̗̦̪̲̮̲̲̤̙͍͚͖̤̼̐̀͋̄̍̿̎̚͜͜͜͜͜͜͜͜͜͜͜͜͜ͅͅͅͅͅͅͅͅͅͅͅͅͅͅͅͅͅ .',
+      'Filha?',
+      'Não saia daqui... nunca.',
+      'Meu olhar está em você.'
+    ];
+    const glitchImg=document.getElementById('glitch-img');
 
-    for (let i = 0; i < 100; i++) {
-      particles.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        size: Math.random() * 2 + 1,
-        speedY: Math.random() * 0.5 + 0.2
-      });
+    function attemptLogin(){
+      const u=document.getElementById('username').value;
+      const p=document.getElementById('password').value;
+      if(u===userOk && p===passOk){ alert('Login bem-sucedido.'); /* redirecionar */ }
+      else {
+        const msg=errors[Math.floor(Math.random()*errors.length)];
+        if(Math.random()<0.2){ glitchImg.style.display='block'; setTimeout(()=>location.reload(),1000); }
+        else { alert(msg); location.reload(); }
+      }
     }
 
-    function drawParticles() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "rgba(255,255,255,0.1)";
-      particles.forEach(p => {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
-        p.y += p.speedY;
-        if (p.y > canvas.height) p.y = 0;
-      });
-      requestAnimationFrame(drawParticles);
-    }
-
-    drawParticles();
+    document.addEventListener('keydown', e=>{ if(e.key==='Enter') attemptLogin(); });
   </script>
 </body>
 </html>
