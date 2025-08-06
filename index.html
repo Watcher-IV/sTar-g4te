@@ -64,15 +64,30 @@
       z-index:1000;
       display:none;
     }
+    .intro-screen {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      z-index: 1001;
+      text-align: center;
+      font-size: 18px;
+    }
   </style>
 </head>
 <body>
   <canvas id="dust"></canvas>
   <img src="lingering.png" id="glitch-img" alt="glitch" />
-    <div class="intro-screen" id="introScreen">
+
+  <!-- MENSAGEM APÓS LOGIN -->
+  <div class="intro-screen" id="introScreen">
     <div class="intro-text">Bem vindo devolta, eu estava com saudade.</div>
   </div>
-  <div class="container login-container" id="loginContainer" style="display:none;">
+
+  <!-- TELA DE LOGIN -->
+  <div class="container login-container" id="loginContainer">
     <div class="border-box">
       <div class="login-box">
         <input type="text" id="username" placeholder="Usuário" autocomplete="off" />
@@ -80,46 +95,78 @@
       </div>
     </div>
   </div>
-    </div>
-  </div>
+
   <script>
     // partículas
     const canvas = document.getElementById('dust');
     const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    canvas.width = window.innerWidth; 
+    canvas.height = window.innerHeight;
     let particles = [];
-    for(let i=0;i<100;i++) particles.push({ x:Math.random()*canvas.width, y:Math.random()*canvas.height, r:Math.random()*2+0.5, d:Math.random()*0.5+0.2 });
-    function draw(){ ctx.clearRect(0,0,canvas.width,canvas.height);
-      ctx.fillStyle='rgba(255,255,255,0.1)';
-      particles.forEach(p=>{ ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,2*Math.PI); ctx.fill(); p.y -= p.d; if(p.y<0){p.y=canvas.height; p.x=Math.random()*canvas.width;} });
+    for (let i = 0; i < 100; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 2 + 0.5,
+        d: Math.random() * 0.5 + 0.2
+      });
+    }
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'rgba(255,255,255,0.1)';
+      particles.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, 2 * Math.PI);
+        ctx.fill();
+        p.y -= p.d;
+        if (p.y < 0) {
+          p.y = canvas.height;
+          p.x = Math.random() * canvas.width;
+        }
+      });
       requestAnimationFrame(draw);
     }
     draw();
 
     // login
-    const userOk='Sebastian-IV', passOk='drownedstar2009';
-    const errors=[
+    const userOk = 'Sebastian-IV', passOk = 'drownedstar2009';
+    const errors = [
       'Você consegue me ver?',
       'Sistema comprometido: ⸮#ƨⱯ⌐₴⟟∰𝖊⟬g̸...',
-      '**⸮#ƨⱯ⌐₴⟟∰𝖊⟬g̸̡̛̛̤͆̈́͌͘͜l̷͉̥̹̺̟͇̯̾ͅ!̶̨͕͍̪͖͚͓͉̦̥͚̀T̸̥̖̘͌̅͋̇̌̇͝C̷̤̠̺̙̥͍̤͍̠̓Ḥ̷̩̯͖̝͇̰̤̤̀̊̒%̸̡͕̘̺̳̥͜͝@̵̟̞̲̭̥̜̳̞͐̕!̵͕͓̪͕̼̖͙͍̰̥͐̆̏̇̕͜͝⧗𝙕𝚉𝔠𝘃⧚⸸̵̡̢̡̢̢̨̨̨̢̨̢̢̨̢̢̢̢̢̨̢̢̡̢̡̢͕̞̮̼͇̖̩̻̼̥͎̠̲̩̘̠̞̦̜̹̦̠̯̬̹̲̯̬̫͓̖̪͎̗̳̰̠͖̳͕̰̺̙͓̬͉̭̬̖͎̖̥̺̭͔̗̤̗͎͓̭͇̠͚̳̯̤̻̟̤͈̟̹̹̩̰̪̮̻̥̹̮̫͉͓̞̩̦̯̺̘̲̪͇̪̱̗̙̻͓͙̳̬̪͖̼̺̞̙̺̤̫̙̠̖̠͖̫̹͎̬͓̲͚͖̭̯̳͈͕̱̯͍̤̫͕͉̭͕͖̞̗̜̗͙̩̘̜̞͓̯͓̩͓̜̳͎͕̬͕̞͕̫͓̗͇̲̬̥̰̭̥̠̺̲̤̻̪͇̳̲̦̳̘͉͚̞̬͈̘̭̞̲̠̘͕̥͇̼̳͍̘̳͎̤͙̪͎̞̤̘̙͈͇̭̗͚̰̮͖̦̺̭͕̹̰̘̗͇̠̠̭͕̩͎̘̫͚͉͍͓̹͈͉͕̳̬̤͍̤͖͉̱̭̬̲͙̤͈̭̮͈̹̘̼͇̤̹͉͓̰̳̤̠̪̹̪̘͎͙̟̗̟̞͕̼̜̙͖͍̹͓̤͇͈̱̼͈̥̦̫̱͔̜̙̪̞͍͎̖̫̲͉̳̼͙̖̲̭̦̖̲̞̮̺̮͓͈̼̼̟͚̦͖͈̠͇̰̭͎̙̝̯̲͓͓̤̟̪̘̬̳̖̘̲̠̤̰̜͍̰͚͖͕͉͖͓͉̼̞̠̜̠̰͎̼̙̘̤̪̫̦̝̮͎̙̙̝̖̫̗̦̪̲̮̲̲̤̙͍͚͖̤̼̐̀͋̄̍̿̎̚͜͜͜͜͜͜͜͜͜͜͜͜͜ͅͅͅͅͅͅͅͅͅͅͅͅͅͅͅͅͅ **⸮#ƨⱯ⌐₴⟟∰𝖊⟬g̸̡̛̛̤͆̈́͌͘͜l̷͉̥̹̺̟͇̯̾ͅ!̶̨͕͍̪͖͚͓͉̦̥͚̀T̸̥̖̘͌̅͋̇̌̇͝C̷̤̠̺̙̥͍̤͍̠̓Ḥ̷̩̯͖̝͇̰̤̤̀̊̒%̸̡͕̘̺̳̥͜͝@̵̟̞̲̭̥̜̳̞͐̕!̵͕͓̪͕̼̖͙͍̰̥͐̆̏̇̕͜͝⧗𝙕𝚉𝔠𝘃⧚⸸̵̡̢̡̢̢̨̨̨̢̨̢̢̨̢̢̢̢̢̨̢̢̡̢̡̢͕̞̮̼͇̖̩̻̼̥͎̠̲̩̘̠̞̦̜̹̦̠̯̬̹̲̯̬̫͓̖̪͎̗̳̰̠͖̳͕̰̺̙͓̬͉̭̬̖͎̖̥̺̭͔̗̤̗͎͓̭͇̠͚̳̯̤̻̟̤͈̟̹̹̩̰̪̮̻̥̹̮̫͉͓̞̩̦̯̺̘̲̪͇̪̱̗̙̻͓͙̳̬̪͖̼̺̞̙̺̤̫̙̠̖̠͖̫̹͎̬͓̲͚͖̭̯̳͈͕̱̯͍̤̫͕͉̭͕͖̞̗̜̗͙̩̘̜̞͓̯͓̩͓̜̳͎͕̬͕̞͕̫͓̗͇̲̬̥̰̭̥̠̺̲̤̻̪͇̳̲̦̳̘͉͚̞̬͈̘̭̞̲̠̘͕̥͇̼̳͍̘̳͎̤͙̪͎̞̤̘̙͈͇̭̗͚̰̮͖̦̺̭͕̹̰̘̗͇̠̠̭͕̩͎̘̫͚͉͍͓̹͈͉͕̳̬̤͍̤͖͉̱̭̬̲͙̤͈̭̮͈̹̘̼͇̤̹͉͓̰̳̤̠̪̹̪̘͎͙̟̗̟̞͕̼̜̙͖͍̹͓̤͇͈̱̼͈̥̦̫̱͔̜̙̪̞͍͎̖̫̲͉̳̼͙̖̲̭̦̖̲̞̮̺̮͓͈̼̼̟͚̦͖͈̠͇̰̭͎̙̝̯̲͓͓̤̟̪̘̬̳̖̘̲̠̤̰̜͍̰͚͖͕͉͖͓͉̼̞̠̜̠̰͎̼̙̘̤̪̫̦̝̮͎̙̙̝̖̫̗̦̪̲̮̲̲̤̙͍͚͖̤̼̐̀͋̄̍̿̎̚͜͜͜͜͜͜͜͜͜͜͜͜͜ͅͅͅͅͅͅͅͅͅͅͅͅͅͅͅͅͅ .',
+      '**⸮#ƨⱯ⌐₴⟟∰𝖊⟬g̸̡̛̛̤͆̈́͌͘͜l̷͉̥̹̺̟͇̯̾ͅ!₴⟟∰𝖊⟬g̸̡̛̛̤͆̈́͌͘͜l̷͉̥̹̺̟͇̯̾ͅ!₴⟟∰𝖊⟬g̸̡̛̛̤͆̈́͌͘͜l̷͉̥̹̺̟͇̯̾ͅ!₴⟟∰𝖊⟬g̸̡̛̛̤͆̈́͌͘͜l̷͉̥̹̺̟͇̯̾ͅ!',
       'Filha?.',
       'Não saia daqui... nunca.',
       'Meu olhar está em você.'
     ];
-    const glitchImg=document.getElementById('glitch-img');
+    const glitchImg = document.getElementById('glitch-img');
 
-    function attemptLogin(){
-      const u=document.getElementById('username').value;
-      const p=document.getElementById('password').value;
-      if(u===userOk && p===passOk){ alert('Login bem-sucedido.'); /* redirecionar */ }
-      else {
-        const msg=errors[Math.floor(Math.random()*errors.length)];
-        if(Math.random()<0.2){ glitchImg.style.display='block'; setTimeout(()=>location.reload(),1000); }
-        else { alert(msg); location.reload(); }
+    function attemptLogin() {
+      const u = document.getElementById('username').value;
+      const p = document.getElementById('password').value;
+
+      if (u === userOk && p === passOk) {
+        document.getElementById('loginContainer').style.display = 'none';
+        document.getElementById('introScreen').style.display = 'block';
+
+        setTimeout(() => {
+          alert('Login bem-sucedido.');
+          // Aqui você pode redirecionar se quiser
+        }, 2000);
+      } else {
+        const msg = errors[Math.floor(Math.random() * errors.length)];
+        if (Math.random() < 0.2) {
+          glitchImg.style.display = 'block';
+          setTimeout(() => location.reload(), 1000);
+        } else {
+          alert(msg);
+          location.reload();
+        }
       }
     }
 
-    document.addEventListener('keydown', e=>{ if(e.key==='Enter') attemptLogin(); });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter') attemptLogin();
+    });
   </script>
 </body>
 </html>
