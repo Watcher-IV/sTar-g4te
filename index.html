@@ -1,145 +1,141 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
   <title>Login</title>
   <style>
-    @font-face {
-      font-family: 'PixelFont';
-      src: url('pixel-font.ttf') format('truetype');
-    }
-    * { margin:0; padding:0; box-sizing:border-box; }
     body {
-      background-color:#0a0a0a;
-      color:#bfbfbf;
-      font-family:'PixelFont',monospace;
-      overflow:hidden;
+      margin: 0;
+      padding: 0;
+      background-color: #000000;
+      font-family: 'Courier New', monospace;
+      color: #d1d1d1;
+      overflow: hidden;
     }
-    #particles {
-      position:absolute; top:0; left:0;
-      width:100vw; height:100vh;
-      z-index:1;
+
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 9999;
+      pointer-events: none;
     }
-    .container {
-      position:relative; z-index:2;
-      display:flex; align-items:center; justify-content:center;
-      height:100vh;
+
+    .login-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 40px;
+      background-color: #000;
+      border: 12px solid transparent;
+      border-image: url('border.png') 30 round;
+      z-index: 1;
+      filter: contrast(120%) saturate(80%) brightness(90%);
     }
-    .login-box {
-      background:#000;
-      border:10px solid transparent;
-      border-image:url('f50d8949-de48-4ccd-8c16-661d25291f29.png') 30 round;
-      padding:30px;
-      width:320px;
-      text-align:center;
-      filter:blur(0.5px);
+
+    input[type="text"], input[type="password"] {
+      display: block;
+      width: 300px;
+      margin: 10px auto;
+      padding: 10px;
+      background: #111;
+      border: 1px solid #444;
+      color: #d1d1d1;
+      font-size: 16px;
+      font-family: 'Courier New', monospace;
+      text-shadow: 1px 1px #000;
+      image-rendering: pixelated;
     }
-    .login-box h1 {
-      font-size:18px;
-      margin-bottom:20px;
-      filter:blur(0.6px);
-    }
-    .login-box input {
-      width:100%;
-      padding:8px;
-      margin-bottom:12px;
-      background:#111;
-      border:none;
-      color:#bfbfbf;
-      font-size:14px;
-      filter:blur(0.4px);
-    }
-    .login-box button {
-      width:100%;
-      padding:8px;
-      background:#222;
-      border:none;
-      color:#bfbfbf;
-      cursor:pointer;
-      font-size:14px;
-      filter:blur(0.4px);
-    }
-    #glitch-img {
-      position:absolute; top:0; left:0;
-      width:100vw; height:100vh;
-      background:url('d4c0a3bd-f933-4fc4-b876-337e6571cc3a.png') center/cover no-repeat;
-      display:none;
-      z-index:99;
+
+    .glitch-image {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      z-index: 9998;
+      display: none;
     }
   </style>
 </head>
 <body>
-  <canvas id="particles"></canvas>
-  <div id="glitch-img"></div>
-  <div class="container">
-    <div class="login-box">
-      <h1>Bem vindo devolta, eu estava com saudade.</h1>
-      <input type="text" id="username" placeholder="Usuário" autocomplete="off" />
-      <input type="password" id="password" placeholder="Senha" autocomplete="off" />
-      <button onclick="handleLogin()">Entrar</button>
-    </div>
-  </div>
-  <script>
-    // partículas simples canvas
-    const canvas = document.getElementById('particles');
-    const ctx = canvas.getContext('2d');
-    let particles = [];
-    function init() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      for(let i=0;i<80;i++) {
-        particles.push({
-          x:Math.random()*canvas.width,
-          y:Math.random()*canvas.height,
-          r:Math.random()*2+0.5,
-          d:Math.random()*1+0.5
-        });
-      }
-    }
-    function draw() {
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      ctx.fillStyle='rgba(255,255,255,0.2)';
-      particles.forEach(p=>{
-        ctx.beginPath();
-        ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-        ctx.fill();
-        p.y -= p.d;
-        if(p.y<0){p.y=canvas.height; p.x=Math.random()*canvas.width;}
-      });
-      requestAnimationFrame(draw);
-    }
-    window.addEventListener('resize',()=>{canvas.width=window.innerWidth;canvas.height=window.innerHeight;});
-    init(); draw();
+  <canvas id="dust"></canvas>
 
-    // login
-    const validUser='Sebastian-IV';
-    const validPass='drownedstar2009';
-    const errors=[
-      'Acesso negado.',
-      'Sequência corrompida.',
-      'Código inválido ou comprometido.'
+  <div class="login-container">
+    <form id="loginForm">
+      <input type="text" id="username" placeholder="Usuário">
+      <input type="password" id="password" placeholder="Senha">
+      <input type="submit" value="Entrar">
+    </form>
+  </div>
+
+  <img src="lingering.png" class="glitch-image" id="glitchImg">
+
+  <script>
+    const form = document.getElementById('loginForm');
+    const glitchImg = document.getElementById('glitchImg');
+
+    const errosSinistros = [
+      "Você consegue me ver?",
+      "Sistema comprometido: **⸮#ƨⱯ⌐₴⟟∰𝖊⟬g̸̡̛̛̤͆̈́͌͘͜l̷͉̥̹̺̟͇̯̾ͅ!...",
+      "Algo está errado aqui, muito errado."
     ];
-    function handleLogin(){
-      const user=document.getElementById('username').value;
-      const pass=document.getElementById('password').value;
-      if(user===validUser && pass===validPass){
-        // sucesso
-        alert('Login bem-sucedido.');
-        // redirecionar ou mostrar menu
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const user = document.getElementById('username').value;
+      const pass = document.getElementById('password').value;
+
+      if (user === 'Sebastian-IV' && pass === 'drownedstar2009') {
+        alert('Bem vindo devolta, eu estava com saudade.');
+        // Pode redirecionar para a próxima página aqui
       } else {
-        const chance=Math.random();
-        const msg=errors[Math.floor(Math.random()*errors.length)];
-        if(chance<0.2){
-          // glitch image
-          document.getElementById('glitch-img').style.display='block';
-          setTimeout(()=>{location.reload();},1000);
+        const chance = Math.random();
+        if (chance < 0.2) {
+          glitchImg.style.display = 'block';
+          setTimeout(() => {
+            location.reload();
+          }, 1000);
         } else {
-          alert(msg);
-          location.reload();
+          const erroAleatorio = errosSinistros[Math.floor(Math.random() * errosSinistros.length)];
+          alert(erroAleatorio);
         }
       }
+    });
+
+    // Partículas (canvas)
+    const canvas = document.getElementById('dust');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    for (let i = 0; i < 100; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        size: Math.random() * 2 + 1,
+        speedY: Math.random() * 0.5 + 0.2
+      });
     }
+
+    function drawParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "rgba(255,255,255,0.1)";
+      particles.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        p.y += p.speedY;
+        if (p.y > canvas.height) p.y = 0;
+      });
+      requestAnimationFrame(drawParticles);
+    }
+
+    drawParticles();
   </script>
 </body>
 </html>
