@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login</title>
+  <style>
+    @font-face {
+      font-family: 'PixelFont';
+      src: url('pixel-font.ttf') format('truetype');
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background-color:#0a0a0a;
+      color:#bfbfbf;
+      font-family:'PixelFont',monospace;
+      overflow:hidden;
+    }
+    #particles {
+      position:absolute; top:0; left:0;
+      width:100vw; height:100vh;
+      z-index:1;
+    }
+    .container {
+      position:relative; z-index:2;
+      display:flex; align-items:center; justify-content:center;
+      height:100vh;
+    }
+    .login-box {
+      background:#000;
+      border:10px solid transparent;
+      border-image:url('f50d8949-de48-4ccd-8c16-661d25291f29.png') 30 round;
+      padding:30px;
+      width:320px;
+      text-align:center;
+      filter:blur(0.5px);
+    }
+    .login-box h1 {
+      font-size:18px;
+      margin-bottom:20px;
+      filter:blur(0.6px);
+    }
+    .login-box input {
+      width:100%;
+      padding:8px;
+      margin-bottom:12px;
+      background:#111;
+      border:none;
+      color:#bfbfbf;
+      font-size:14px;
+      filter:blur(0.4px);
+    }
+    .login-box button {
+      width:100%;
+      padding:8px;
+      background:#222;
+      border:none;
+      color:#bfbfbf;
+      cursor:pointer;
+      font-size:14px;
+      filter:blur(0.4px);
+    }
+    #glitch-img {
+      position:absolute; top:0; left:0;
+      width:100vw; height:100vh;
+      background:url('d4c0a3bd-f933-4fc4-b876-337e6571cc3a.png') center/cover no-repeat;
+      display:none;
+      z-index:99;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="particles"></canvas>
+  <div id="glitch-img"></div>
+  <div class="container">
+    <div class="login-box">
+      <h1>Bem vindo devolta, eu estava com saudade.</h1>
+      <input type="text" id="username" placeholder="Usuário" autocomplete="off" />
+      <input type="password" id="password" placeholder="Senha" autocomplete="off" />
+      <button onclick="handleLogin()">Entrar</button>
+    </div>
+  </div>
+  <script>
+    // partículas simples canvas
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    function init() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      for(let i=0;i<80;i++) {
+        particles.push({
+          x:Math.random()*canvas.width,
+          y:Math.random()*canvas.height,
+          r:Math.random()*2+0.5,
+          d:Math.random()*1+0.5
+        });
+      }
+    }
+    function draw() {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle='rgba(255,255,255,0.2)';
+      particles.forEach(p=>{
+        ctx.beginPath();
+        ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+        ctx.fill();
+        p.y -= p.d;
+        if(p.y<0){p.y=canvas.height; p.x=Math.random()*canvas.width;}
+      });
+      requestAnimationFrame(draw);
+    }
+    window.addEventListener('resize',()=>{canvas.width=window.innerWidth;canvas.height=window.innerHeight;});
+    init(); draw();
+
+    // login
+    const validUser='Sebastian-IV';
+    const validPass='drownedstar2009';
+    const errors=[
+      'Acesso negado.',
+      'Sequência corrompida.',
+      'Código inválido ou comprometido.'
+    ];
+    function handleLogin(){
+      const user=document.getElementById('username').value;
+      const pass=document.getElementById('password').value;
+      if(user===validUser && pass===validPass){
+        // sucesso
+        alert('Login bem-sucedido.');
+        // redirecionar ou mostrar menu
+      } else {
+        const chance=Math.random();
+        const msg=errors[Math.floor(Math.random()*errors.length)];
+        if(chance<0.2){
+          // glitch image
+          document.getElementById('glitch-img').style.display='block';
+          setTimeout(()=>{location.reload();},1000);
+        } else {
+          alert(msg);
+          location.reload();
+        }
+      }
+    }
+  </script>
+</body>
+</html>
