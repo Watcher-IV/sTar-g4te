@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Archive — disdain</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    /* ======= VARIÁVEIS / RESET ======= */
+    :root{--bg:#050505;--light:#d9d9d9;--muted:#9a9a9a;--accent:#8b0000;--glass: rgba(0,0,0,0.55)}
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;font-family:'Press Start 2P',monospace;background:var(--bg);color:var(--light);-webkit-font-smoothing:none;overflow:hidden}
+
+    /* ======= FUNDO E OVERLAYS (scanlines, grain, vignette) ======= */
+    .bg-wrap{position:fixed;inset:0;z-index:0;background:url('assets/background.jpg') center/cover no-repeat;filter:blur(2px) brightness(0.45)}
+    .overlay-scanlines{position:fixed;inset:0;pointer-events:none;background-image:repeating-linear-gradient(0deg, rgba(217,217,217,0.02) 0 1px, transparent 1px 3px);mix-blend-mode:screen;z-index:1;opacity:0.6;animation:scan-move 12s linear infinite}
+    @keyframes scan-move{from{background-position-y:0}to{background-position-y:40px}}
+    .grain{position:fixed;inset:0;pointer-events:none;z-index:1;opacity:0.05;background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><filter id="n"><feTurbulence baseFrequency="0.9" numOctaves="1" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)"/></svg>');background-size:200px 200px}
+    body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:2;background:radial-gradient(ellipse at center, rgba(0,0,0,0) 38%, rgba(0,0,0,0.6) 100%);mix-blend-mode:multiply}
+
+    /* ======= LAYOUT PRINCIPAL ======= */
+    .app{position:relative;z-index:10;min-height:100vh;display:flex;flex-direction:column}
+
+    /* ======= HEADER ======= */
+    header{height:64px;display:flex;align-items:center;justify-content:space-between;padding:10px 20px;gap:12px}
+    .left{display:flex;align-items:center;gap:12px}
+    .logo{width:44px;height:44px;border-radius:6px;background:rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:center}
+    .user-tag{font-size:11px;color:var(--muted)}
+    .center{flex:1;display:flex;align-items:center;justify-content:center}
+    .clock{font-size:12px}
+    .right{display:flex;align-items:center;gap:12px}
+    .icon-btn{width:36px;height:36px;border-radius:6px;background:rgba(255,255,255,0.02);display:flex;align-items:center;justify-content:center;cursor:default}
+
+    /* ======= AREA PRINCIPAL ======= */
+    .content{flex:1;padding:18px 28px;display:flex;flex-direction:column;gap:14px}
+    .toolbar{display:flex;align-items:center;justify-content:space-between}
+    .search{display:flex;align-items:center;gap:8px}
+    .search input{background:transparent;border:1px solid rgba(217,217,217,0.06);padding:8px 10px;border-radius:6px;color:var(--light);outline:none}
+
+    .files-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+    .file-card{position:relative;padding:12px;border-radius:8px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.06));cursor:pointer;user-select:none;display:flex;gap:10px;align-items:center;transition:transform .18s ease,box-shadow .18s ease}
+    .file-card:hover{transform:translateY(-6px);box-shadow:0 8px 30px rgba(0,0,0,0.6)}
+    .file-card.selected{outline:2px solid rgba(217,217,217,0.06);box-shadow:0 10px 40px rgba(0,0,0,0.7)}
+    .file-icon{width:44px;height:44px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.02)}
+    .file-meta{flex:1;overflow:hidden}
+    .file-name{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .file-sub{font-size:9px;color:var(--muted);margin-top:6px}
+
+    /* arquivo suspeito */
+    .file-card.sus{box-shadow:0 0 18px rgba(139,0,0,0.12);border:1px solid rgba(139,0,0,0.06)}
+    .file-card.sus::after{content:"";position:absolute;inset:0;border-radius:8px;pointer-events:none;box-shadow:0 0 36px rgba(139,0,0,0.06) inset}
+
+    /* badge proibido */
+    .badge{position:absolute;right:8px;top:8px;padding:4px 6px;background:rgba(139,0,0,0.95);color:#fff;font-size:8px;border-radius:4px}
+
+    /* CONTEXT MENU */
+    .context-menu{position:fixed;z-index:2000;background:#0b0b0b;border:1px solid rgba(217,217,217,0.12);padding:6px;border-radius:6px;display:none;min-width:160px;box-shadow:0 8px 40px rgba(0,0,0,0.7)}
+    .context-menu button{display:block;width:100%;padding:8px 10px;background:transparent;color:var(--light);border:none;text-align:left;font-size:12px;cursor:pointer}
+    .context-menu button:hover{background:rgba(255,255,255,0.02)}
+
+    /* MODAL PREVIEW */
+    .modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(0.98);min-width:360px;max-width:92vw;background:var(--glass);border-radius:10px;padding:18px;z-index:1500;display:none;box-shadow:0 14px 60px rgba(0,0,0,0.8)}
+    .modal.show{display:block;animation:modal-in .28s ease forwards}
+    @keyframes modal-in{from{opacity:0;transform:translate(-50%,-50%) scale(0.98)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+    .modal .preview{max-height:60vh;overflow:auto}
+    .modal .title{font-size:12px;margin-bottom:6px}
+
+    /* RODAPÉ */
+    footer{height:44px;display:flex;align-items:center;justify-content:space-between;padding:8px 18px;color:var(--muted);font-size:11px}
+    .status{display:flex;gap:12px;align-items:center}
+    .progress{height:8px;width:240px;background:rgba(255,255,255,0.03);border-radius:6px;overflow:hidden}
+    .progress > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),#a10000)}
+
+    /* TOOLTIP amigável para mensagens escondidas */
+    .secret{position:relative}
+    .secret .tooltip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#070707;padding:8px;border-radius:6px;border:1px solid rgba(217,217,217,0.08);font-size:10px;color:var(--light);display:none;white-space:nowrap}
+    .secret:hover .tooltip{display:block}
+
+    /* reduz movimento se usuário preferir */
+    @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+    @media (max-width:820px){.files-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}}
+  </style>
+</head>
+<body>
+  <div class="bg-wrap"></div>
+  <div class="overlay-scanlines"></div>
+  <div class="grain"></div>
+
+  <div class="app" role="application">
+    <!-- ======= HEADER ======= -->
+    <header>
+      <div class="left">
+        <div class="logo" aria-hidden="true"><img src="assets/logo-small.png" alt="logo" style="width:24px;height:24px;opacity:0.9"/></div>
+        <div>
+          <div style="font-size:11px">Access to: <strong style="letter-spacing:1px">SEBASTIAN-IV</strong></div>
+          <div class="user-tag" style="margin-top:6px">Painel — Arquivos</div>
+        </div>
+      </div>
+
+      <div class="center">
+        <div id="clock" class="clock" aria-live="polite">00:00:00</div>
+      </div>
+
+      <div class="right">
+        <div class="icon-btn secret" title="Configurações: não funcional">
+          <img src="assets/icon-gear.svg" alt="gear" style="width:16px;height:16px;opacity:0.9"/>
+          <div class="tooltip">CONFIG</div>
+        </div>
+        <div class="icon-btn" id="audioToggle" title="Interruptor de som">
+          <img id="audioIcon" src="assets/icon-sound-on.svg" alt="som" style="width:16px;height:16px;opacity:0.9"/>
+        </div>
+        <div class="icon-btn" title="Logout: não funcional">
+          <img src="assets/icon-logout.svg" alt="logout" style="width:16px;height:16px;opacity:0.9"/>
+        </div>
+      </div>
+    </header>
+
+    <!-- ======= CONTEÚDO ======= -->
+    <main class="content">
+      <div class="toolbar">
+        <div class="search">
+          <input id="search" placeholder="Pesquisar (nome, tipo)" />
+          <select id="sort">
+            <option value="name">Ordenar: Nome</option>
+            <option value="date">Ordenar: Data</option>
+            <option value="size">Ordenar: Tamanho</option>
+          </select>
+        </div>
+        <div class="actions">
+          <button id="selectAll" style="background:transparent;border:1px solid rgba(255,255,255,0.03);padding:8px 10px;border-radius:6px;color:var(--light);cursor:pointer">Selecionar tudo</button>
+        </div>
+      </div>
+
+      <div id="filesGrid" class="files-grid" role="list"></div>
+    </main>
+
+    <!-- ======= RODAPÉ ======= -->
+    <footer>
+      <div class="status"><span id="statusText">Nenhum arquivo aberto</span><span id="selectionCount">0 selecionado(s)</span></div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="progress" aria-hidden="true"><i id="progressBar" style="width:0%"></i></div>
+        <div style="font-size:10px;color:var(--muted)">v.1.0</div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- CONTEXT MENU -->
+  <div id="contextMenu" class="context-menu" role="menu">
+    <button data-action="open">Abrir</button>
+    <button data-action="rename">Renomear</button>
+    <button data-action="delete">Excluir</button>
+    <button data-action="download">Baixar</button>
+    <button data-action="properties">Propriedades</button>
+  </div>
+
+  <!-- MODAL PREVIEW / ERRO -->
+  <div id="modal" class="modal" role="dialog" aria-modal="true">
+    <div class="title" id="modalTitle"></div>
+    <div class="preview" id="modalPreview"></div>
+    <div style="text-align:right;margin-top:12px"><button id="modalClose" style="padding:8px 10px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,0.03);color:var(--light);cursor:pointer">Fechar</button></div>
+  </div>
+
+  <!-- AUDIO (ambient e efeitos) -->
+  <audio id="ambient" loop src="sounds/ambient.mp3" preload="auto"></audio>
+  <audio id="sClick" src="sounds/click.mp3" preload="auto"></audio>
+  <audio id="sOpen" src="sounds/open.mp3" preload="auto"></audio>
+  <audio id="sError" src="sounds/error.mp3" preload="auto"></audio>
+
+  <script>
+    /* ======= DADOS DE EXEMPLO ======= */
+    const files = [
+      {id:1,name:'Projeto_Manual.pdf',type:'pdf',date:'2025-08-07',size:'1.2 MB',suspicious:false,forbidden:false},
+      {id:2,name:'DOC_SECRET.txt',type:'txt',date:'2025-08-05',size:'4 KB',suspicious:true,forbidden:false},
+      {id:3,name:'gallery_01.png',type:'img',date:'2025-07-21',size:'2.6 MB',suspicious:false,forbidden:false},
+      {id:4,name:'FORBIDDEN.EXE',type:'exe',date:'2003-11-11',size:'512 KB',suspicious:true,forbidden:true},
+      {id:5,name:'note.wav',type:'audio',date:'2025-06-01',size:'320 KB',suspicious:false,forbidden:false},
+      {id:6,name:'readme.md',type:'txt',date:'2025-08-06',size:'2 KB',suspicious:false,forbidden:false}
+    ];
+
+    /* ======= CACHE DOS ELEMENTOS ======= */
+    const grid = document.getElementById('filesGrid');
+    const statusText = document.getElementById('statusText');
+    const selectionCount = document.getElementById('selectionCount');
+    const contextMenu = document.getElementById('contextMenu');
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalPreview = document.getElementById('modalPreview');
+    const modalClose = document.getElementById('modalClose');
+    const ambient = document.getElementById('ambient');
+    const sClick = document.getElementById('sClick');
+    const sOpen = document.getElementById('sOpen');
+    const sError = document.getElementById('sError');
+    const audioToggle = document.getElementById('audioToggle');
+    const audioIcon = document.getElementById('audioIcon');
+
+    let selected = new Set();
+    let currentContextId = null;
+
+    /* ======= RENDERIZA ARQUIVOS ======= */
+    function renderFiles(list){
+      grid.innerHTML = list.map(f=>{
+        const sus = f.suspicious? 'sus':'';
+        const badge = f.forbidden? '<div class="badge">PROIBIDO</div>':'';
+        return `
+          <div class="file-card ${sus}" data-id="${f.id}" role="listitem" tabindex="0">
+            <div class="file-icon" aria-hidden="true">${iconFor(f.type)}</div>
+            <div class="file-meta">
+              <div class="file-name">${escapeHTML(f.name)}</div>
+              <div class="file-sub">${f.date} • ${f.size}</div>
+            </div>
+            ${badge}
+          </div>`;
+      }).join('');
+      attachListeners();
+      updateStatus();
+    }
+
+    function iconFor(type){
+      // simples ícones textuais para referência — você pode trocar por SVGs em assets/
+      switch(type){
+        case 'pdf': return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" fill="rgba(255,255,255,0.03)" rx="4"/></svg>';
+        case 'img': return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" fill="rgba(255,255,255,0.02)" rx="4"/></svg>';
+        case 'exe': return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" fill="rgba(139,0,0,0.05)" rx="4"/></svg>';
+        case 'audio': return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" fill="rgba(255,255,255,0.02)" rx="4"/></svg>';
+        default: return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" fill="rgba(255,255,255,0.02)" rx="4"/></svg>';
+      }
+    }
+
+    function attachListeners(){
+      document.querySelectorAll('.file-card').forEach(card=>{
+        const id = Number(card.dataset.id);
+        card.onclick = (e)=>{
+          if(e.detail === 2){ return; } // double click handled separately
+          toggleSelect(id, card);
+          sClick && sClick.play().catch(()=>{});
+        };
+        card.ondblclick = ()=>openFile(id);
+        card.oncontextmenu = (ev)=>{
+          ev.preventDefault();
+          currentContextId = id;
+          openContextMenu(ev.clientX, ev.clientY);
+        };
+        card.onmouseover = (ev)=>{
+          // tooltip secreto em arquivos suspeitos
+          const file = files.find(f=>f.id===id);
+          if(file && file.suspicious){
+            // adiciona pequeno tooltip com mensagem
+            // usamos title attr como fallback
+            card.title = 'VOCÊ NÃO DEVERIA ESTAR AQUI';
+          }
+        };
+      });
+    }
+
+    /* ======= SELEÇÃO ======= */
+    function toggleSelect(id, el){
+      if(selected.has(id)){ selected.delete(id); el.classList.remove('selected'); }
+      else{ selected.add(id); el.classList.add('selected'); }
+      updateStatus();
+    }
+
+    function updateStatus(){
+      selectionCount.textContent = selected.size + ' selecionado(s)';
+      if(selected.size>0) statusText.textContent = selected.size + ' arquivo(s) selecionado(s)';
+      else statusText.textContent = 'Nenhum arquivo aberto';
+    }
+
+    /* ======= CONTEXT MENU ======= */
+    function openContextMenu(x,y){
+      contextMenu.style.left = x + 'px'; contextMenu.style.top = y + 'px'; contextMenu.style.display = 'block';
+    }
+    window.addEventListener('click', ()=>{ contextMenu.style.display = 'none'; });
+    contextMenu.addEventListener('click',(e)=>{
+      e.stopPropagation(); const action = e.target.dataset.action; if(!action) return;
+      const id = currentContextId; const file = files.find(f=>f.id===id);
+      if(action==='open') openFile(id);
+      if(action==='rename') doRename(id);
+      if(action==='delete') doDelete(id);
+      if(action==='download') doDownload(id);
+      if(action==='properties') showProperties(id);
+      contextMenu.style.display = 'none';
+    });
+
+    /* ======= ABRIR / PREVIEW / FORBIDDEN ======= */
+    function openFile(id){
+      const file = files.find(f=>f.id===id);
+      if(!file) return;
+      if(file.forbidden){ triggerForbiddenEvent(file); return; }
+      sOpen && sOpen.play().catch(()=>{});
+      modalTitle.textContent = file.name;
+      modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px">Visualizando: ${escapeHTML(file.name)}<br><small style=\"color:var(--muted)\">${file.date} • ${file.size}</small></div>`;
+      modal.classList.add('show');
+      statusText.textContent = 'Visualizando: ' + file.name;
+    }
+
+    function triggerForbiddenEvent(file){
+      sError && sError.play().catch(()=>{});
+      // efeito: tela de erro grande com mensagem e glitch
+      modalTitle.textContent = 'ERRO: ACESSO NEGADO';
+      modalPreview.innerHTML = `<div style="padding:18px;color:var(--light);text-align:center;font-size:13px">VOCÊ NÃO DEVERIA ESTAR AQUI<br><small style=\"color:var(--muted)\">Evento gerado ao tentar abrir ${escapeHTML(file.name)}</small></div>`;
+      modal.classList.add('show');
+      // breve glitch visual
+      document.querySelector('.app').classList.add('error-glitch');
+      setTimeout(()=>{ document.querySelector('.app').classList.remove('error-glitch'); },1200);
+    }
+
+    modalClose.addEventListener('click', ()=>{ modal.classList.remove('show'); statusText.textContent = 'Nenhum arquivo aberto'; });
+
+    /* ======= RENOMEAR / EXCLUIR / DOWNLOAD / PROPRIEDADES (simulações) ======= */
+    function doRename(id){
+      const file = files.find(f=>f.id===id);
+      const novo = prompt('Renomear arquivo', file.name);
+      if(novo){ file.name = novo; renderFiles(files); }
+    }
+    function doDelete(id){
+      if(!confirm('Excluir arquivo?')) return;
+      const idx = files.findIndex(f=>f.id===id); if(idx>=0) files.splice(idx,1);
+      renderFiles(files);
+    }
+    function doDownload(id){
+      const file = files.find(f=>f.id===id);
+      const blob = new Blob(["Conteúdo simulado: " + file.name], {type:'text/plain'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = file.name; a.click(); URL.revokeObjectURL(url);
+    }
+    function showProperties(id){
+      const file = files.find(f=>f.id===id);
+      modalTitle.textContent = 'Propriedades — ' + file.name;
+      modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px">
+        Nome: ${escapeHTML(file.name)}<br>
+        Tipo: ${escapeHTML(file.type)}<br>
+        Data: ${escapeHTML(file.date)}<br>
+        Tamanho: ${escapeHTML(file.size)}<br>
+        Suspeito: ${file.suspicious? 'Sim':'Não'}
+      </div>`;
+      modal.classList.add('show');
+    }
+
+    /* ======= BUSCA / ORDENAÇÃO ======= */
+    document.getElementById('search').addEventListener('input', (e)=>{
+      const q = e.target.value.toLowerCase();
+      const list = files.filter(f=> f.name.toLowerCase().includes(q) || f.type.toLowerCase().includes(q));
+      renderFiles(list);
+    });
+    document.getElementById('sort').addEventListener('change',(e)=>{
+      const v = e.target.value; let list = [...files];
+      if(v==='name') list.sort((a,b)=>a.name.localeCompare(b.name));
+      if(v==='date') list.sort((a,b)=> new Date(b.date) - new Date(a.date));
+      if(v==='size') list.sort((a,b)=> parseSize(b.size) - parseSize(a.size));
+      renderFiles(list);
+    });
+
+    function parseSize(s){ if(!s) return 0; if(s.includes('MB')) return parseFloat(s)*1024; if(s.includes('KB')) return parseFloat(s); return 0; }
+
+    /* ======= UTILIDADES ======= */
+    function escapeHTML(str){ return String(str).replace(/[&<>"']/g, tag=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[tag])); }
+
+    /* ======= RELOGIO (segundos pares) ======= */
+    function evenClockTick(el){
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2,'0');
+      const mm = String(now.getMinutes()).padStart(2,'0');
+      const secEven = String(Math.floor(now.getSeconds()/2)*2).padStart(2,'0');
+      el.textContent = `${hh}:${mm}:${secEven}`;
+    }
+    setInterval(()=>evenClockTick(document.getElementById('clock')),500);
+    evenClockTick(document.getElementById('clock'));
+
+    /* ======= AUDIO & CONTROLES ======= */
+    let audioOn = true;
+    function tryPlayAmbient(){ ambient.volume = 0.12; ambient.play().catch(()=>{ audioOn=false; audioIcon.src='assets/icon-sound-off.svg'; }); }
+    tryPlayAmbient();
+    audioToggle.addEventListener('click', ()=>{
+      audioOn = !audioOn;
+      if(audioOn){ ambient.play().catch(()=>{}); audioIcon.src='assets/icon-sound-on.svg'; }
+      else{ ambient.pause(); audioIcon.src='assets/icon-sound-off.svg'; }
+    });
+
+    /* ======= TRANSIÇÃO DE ENTRADA (fade + glitch) ======= */
+    window.addEventListener('load', ()=>{
+      document.body.classList.add('loaded');
+      // entrada leve com glitch (desaparece em 600ms)
+      document.querySelector('.app').classList.add('error-glitch');
+      setTimeout(()=>document.querySelector('.app').classList.remove('error-glitch'),600);
+      renderFiles(files);
+    });
+
+    /* ======= BOTÕES GLOBAIS ======= */
+    document.getElementById('selectAll').addEventListener('click', ()=>{
+      selected = new Set(files.map(f=>f.id)); document.querySelectorAll('.file-card').forEach(c=>c.classList.add('selected')); updateStatus(); sClick && sClick.play().catch(()=>{});
+    });
+
+    /* ======= UTILIDADES FINAIS ======= */
+    function parseSizeValue(s){ if(!s) return 0; if(s.includes('MB')) return parseFloat(s)*1024; if(s.includes('KB')) return parseFloat(s); return 0; }
+
+    /* evitar menu nativo no grid */
+    document.getElementById('filesGrid').addEventListener('contextmenu', e=>e.preventDefault());
+  </script>
+</body>
+</html>
