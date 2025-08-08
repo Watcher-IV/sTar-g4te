@@ -7,108 +7,88 @@
   <!-- Fonte: Press Start 2P (vibe pixel). Você pode substituir por qualquer fonte local/remota. -->
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
-    /* Reset (zerar estilos) */
+    /* RESET */
+    :root{--light:#dcdcdc}
     *{box-sizing:border-box;margin:0;padding:0}
     html,body{height:100%}
 
-    /* Estética preto & branco */
+    /* ESTÉTICA PRETO & CINZA */
     body{
       background:#000;
-      color:#fff;
+      color:var(--light);
       font-family: 'Press Start 2P', monospace;
       -webkit-font-smoothing: none;
       -moz-osx-font-smoothing: grayscale;
       overflow:hidden;
+      /* ligeiro ajuste para não deixar nada muito brilhante */
+      filter:brightness(0.96);
     }
 
-    /* Sobreposição CRT / qualidade degradada para vibe PS1/PS2 */
+    /* SOBREPOSIÇÃO CRT / VIBE PS1/PS2 */
     .overlay-scanlines{
       position:fixed;inset:0;pointer-events:none;
       background-image:
-        repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 3px),
-        radial-gradient(ellipse at center, rgba(255,255,255,0.02) 0%, transparent 40%);
+        repeating-linear-gradient(0deg, rgba(220,220,220,0.02) 0 1px, transparent 1px 3px),
+        radial-gradient(ellipse at center, rgba(220,220,220,0.02) 0%, transparent 40%);
       mix-blend-mode:screen;
-      z-index:9998;
+      z-index:1;
       opacity:0.7;
       transform:scale(1.02);
-      filter: contrast(1.2) brightness(0.95);
+      filter: contrast(1.1) brightness(0.95);
     }
 
-    /* Granulação / ruído sutil */
+    /* GRANULAÇÃO SUTIL */
     .grain{
-      position:fixed;inset:0;pointer-events:none;z-index:9997;opacity:0.06;
+      position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0.06;
       background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><filter id="n"><feTurbulence baseFrequency="0.8" numOctaves="1" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)"/></svg>');
       background-size:200px 200px;
     }
 
-    /* Área central */
-    .wrap{
-      position:relative;z-index:10;min-height:100vh;display:flex;align-items:center;justify-content:center;
-    }
+    /* ÁREA CENTRAL */
+    .wrap{position:relative;z-index:10;min-height:100vh;display:flex;align-items:center;justify-content:center}
 
-    /* Caixa de login */
+    /* CAIXA DE LOGIN */
     .login-card{
       width:420px;max-width:92vw;padding:36px 28px;border-radius:10px;position:relative;
       background: rgba(0,0,0,0.6);backdrop-filter: blur(1px);
-      border:18px solid transparent;
-      border-image-source: url('assets/border.png');
-      border-image-slice: 30 fill;
-      border-image-width: 18;
-      border-image-outset: 0;
-      border-image-repeat: round;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.7), inset 0 0 30px rgba(255,255,255,0.02);
+      border:0; /* borda tratada por imagem via ::before (veja abaixo) */
+      box-shadow: 0 10px 40px rgba(0,0,0,0.7), inset 0 0 30px rgba(220,220,220,0.02);
       text-align:center;
     }
 
-    /* Título */
+    /* Borda decorativa via pseudo-element (mais controle e transparência) */
+    .login-card::before{
+      content:"";position:absolute;inset:-18px;border-radius:12px;pointer-events:none;background-image:url('assets/border.png');background-repeat:no-repeat;background-size:cover;opacity:0.95;mix-blend-mode:screen;filter:grayscale(1) brightness(0.95) contrast(1.05);
+    }
+
+    /* CAMPOS */
     .title{font-size:14px;letter-spacing:2px;margin-bottom:18px;filter: blur(0.3px);}
+    .field{display:block;width:100%;margin:10px 0;padding:14px 12px;border-radius:6px;background:#000;border:none;color:var(--light);outline:none;font-size:11px}
+    .field::placeholder{color:rgba(220,220,220,0.6)}
 
-    /* Campos (inputs) */
-    .field{display:block;width:100%;margin:10px 0;padding:14px 12px;border-radius:6px;background:#000;border:2px solid #fff;color:#fff;outline:none;font-size:11px}
-    .field::placeholder{color:rgba(255,255,255,0.5)}
-
-    /* Botão de submissão invisível — não será mostrado, mantido apenas por semântica (oculto) */
-    .hidden-submit{display:none}
-
-    /* Texto de ajuda */
-    .hint{margin-top:12px;font-size:10px;color:rgba(255,255,255,0.6)}
-
-    /* Contêiner de partículas */
+    /* PARTICULAS */
     .particles{position:fixed;inset:0;pointer-events:none;z-index:2}
-    .particle{
-      position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;opacity:0.06;filter:blur(0.2px);
-      animation: floaty linear infinite;
-    }
-    @keyframes floaty{
-      from{transform:translateY(-10vh)}
-      to{transform:translateY(110vh)}
-    }
+    .particle{position:absolute;width:2px;height:2px;border-radius:50%;background:var(--light);opacity:0.06;filter:blur(0.2px);animation: floaty linear infinite}
+    @keyframes floaty{from{transform:translateY(-10vh)}to{transform:translateY(110vh)}}
 
-    /* Pop-up modal (estilizado como alerta do navegador) */
-    .modal{
-      position:fixed;left:50%;top:20%;transform:translateX(-50%);min-width:320px;max-width:90vw;background:#0b0b0b;border:2px solid #fff;padding:16px;border-radius:6px;z-index:9999;box-shadow:0 8px 40px rgba(0,0,0,0.85);
-      display:none;
-    }
+    /* MODAL */
+    .modal{position:fixed;left:50%;top:20%;transform:translateX(-50%);min-width:320px;max-width:90vw;background:#070707;border:1px solid rgba(220,220,220,0.25);padding:16px;border-radius:6px;z-index:9999;box-shadow:0 8px 40px rgba(0,0,0,0.85);display:none}
     .modal.show{display:block}
-    .modal .modal-inner{font-size:12px;line-height:1.3;}
+    .modal .modal-inner{font-size:12px;line-height:1.3;color:var(--light)}
     .modal .modal-img{max-width:100%;display:block;margin:8px auto}
-    .modal .close{display:inline-block;margin-top:12px;padding:8px 10px;border:1px solid #fff;border-radius:4px;cursor:pointer}
+    .modal .close{display:inline-block;margin-top:12px;padding:8px 10px;border:1px solid rgba(220,220,220,0.3);border-radius:4px;cursor:pointer;background:transparent;color:var(--light)}
 
-    /* Mensagem final com fade */
-    .fade-wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;z-index:10001;opacity:0;pointer-events:none;transition:opacity 1.4s ease-in;}
+    /* MENSAGEM FINAL */
+    .fade-wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;z-index:10001;opacity:0;pointer-events:none;transition:opacity 1.4s ease-in}
     .fade-wrap.show{opacity:1;pointer-events:auto}
-    .fade-text{font-size:12px;text-align:center;max-width:90vw}
+    .fade-text{font-size:12px;text-align:center;max-width:90vw;color:var(--light)}
 
-    /* Pequeno efeito glitch para o texto */
+    /* GLITCH */
     .glitch{position:relative}
-    .glitch::after,.glitch::before{content:attr(data-text);position:absolute;left:0;top:0;opacity:.7}
+    .glitch::after,.glitch::before{content:attr(data-text);position:absolute;left:0;top:0;opacity:.6}
     .glitch::before{clip-path:inset(0 0 66% 0);transform:translate(2px,-2px) skewX(-8deg)}
     .glitch::after{clip-path:inset(66% 0 0 0);transform:translate(-2px,2px) skewX(8deg)}
 
-    /* Deixar texto levemente pixelizado/borrado */
-    .pixel-blur{filter: blur(0.4px);}
-
-    /* Pequenos ajustes responsivos */
     @media (max-width:420px){.login-card{padding:22px}}
   </style>
 </head>
@@ -120,32 +100,28 @@
 
   <div class="wrap">
     <div class="login-card" role="main" aria-labelledby="title">
-      <div id="title" class="title pixel-blur glitch" data-text="ACCESS PORTAL">ACCESS PORTAL</div>
+      <div id="title" class="title pixel-blur glitch" data-text=""></div>
 
       <label for="user" style="display:none">Usuário</label>
       <input id="user" class="field" type="text" placeholder="Usuário" autocomplete="off" autocapitalize="characters" spellcheck="false" value="" />
 
       <label for="pass" style="display:none">Senha</label>
       <input id="pass" class="field" type="password" placeholder="Senha" autocomplete="off" spellcheck="false" />
-
-      <div class="hint">Pressione <strong>ENTER</strong> para submeter — nenhum botão visível.</div>
     </div>
   </div>
 
-  <!-- Modal pop-up (custom) -->
   <div id="modal" class="modal" role="dialog" aria-modal="true">
     <div class="modal-inner" id="modalInner"></div>
     <img id="modalImg" class="modal-img" src="" alt="" style="display:none"/>
     <div style="text-align:right"><button id="modalClose" class="close">OK</button></div>
   </div>
 
-  <!-- Fade-out final mensagem -->
   <div id="fadeWrap" class="fade-wrap">
     <div class="fade-text pixel-blur glitch" data-text="Bem vindo de volta. Eu estava com saudades.">Bem vindo de volta. Eu estava com saudades.</div>
   </div>
 
   <script>
-    /* ======= CONFIG (edite conforme quiser) ======= */
+    /* ======= CONFIG ======= */
     const VALID_USER = 'SEBASTIAN-IV';
     const VALID_PASS = 'drownedstar7';
 
@@ -172,35 +148,16 @@
     const modalClose = document.getElementById('modalClose');
     const fadeWrap = document.getElementById('fadeWrap');
 
-    userInput.addEventListener('input', e => {
-      userInput.value = userInput.value.toUpperCase();
-    });
+    userInput.addEventListener('input', e => { userInput.value = userInput.value.toUpperCase(); });
 
-    passInput.addEventListener('keydown', function(e){
-      if(e.key === 'Enter'){
-        e.preventDefault();
-        attemptLogin();
-      }
-    });
+    passInput.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); attemptLogin(); } });
+    userInput.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); passInput.focus(); } });
 
-    userInput.addEventListener('keydown', function(e){
-      if(e.key === 'Enter'){
-        e.preventDefault();
-        passInput.focus();
-      }
-    });
-
-    modalClose.addEventListener('click', ()=>{
-      hideModal();
-      passInput.focus();
-    });
+    modalClose.addEventListener('click', ()=>{ hideModal(); passInput.focus(); });
 
     function showModal({text=null,img=null}){
-      if(img){
-        modalImg.src = img; modalImg.style.display = 'block'; modalInner.style.display='none';
-      } else {
-        modalImg.style.display = 'none'; modalInner.style.display='block'; modalInner.textContent = text;
-      }
+      if(img){ modalImg.src = img; modalImg.style.display = 'block'; modalInner.style.display='none'; }
+      else { modalImg.style.display = 'none'; modalInner.style.display='block'; modalInner.textContent = text; }
       modal.classList.add('show');
     }
     function hideModal(){ modal.classList.remove('show'); }
@@ -208,64 +165,37 @@
     function attemptLogin(){
       const u = (userInput.value||'').trim();
       const p = (passInput.value||'').trim();
-
-      if(u === VALID_USER && p === VALID_PASS){
-        doSuccess();
-      } else {
-        showRandomError();
-      }
+      if(u === VALID_USER && p === VALID_PASS){ doSuccess(); }
+      else { showRandomError(); }
     }
 
-    function doSuccess(){
-      document.body.style.transition = 'filter 1s ease';
-      document.body.style.filter = 'contrast(0.6) blur(0.5px)';
-      fadeWrap.classList.add('show');
-    }
+    function doSuccess(){ document.body.style.transition = 'filter 1s ease'; document.body.style.filter = 'contrast(0.6) blur(0.5px)'; fadeWrap.classList.add('show'); }
 
     function showRandomError(){
       const rareRoll = Math.random();
-      if(rareRoll < RARE_PROBABILITY){
-        showModal({img:RARE_IMG_PATH});
-        return;
-      }
+      if(rareRoll < RARE_PROBABILITY){ showModal({img:RARE_IMG_PATH}); return; }
       const msg = ERROR_MESSAGES[Math.floor(Math.random()*ERROR_MESSAGES.length)];
       const percent = (Math.random()*100).toFixed(2) + '%';
       showModal({text: msg + ' — ' + percent});
     }
 
-    /* ======= Geração de partículas (poeira flutuante bem lenta) ======= */
+    /* ======= Partículas (poeira lenta) ======= */
     const particlesRoot = document.getElementById('particles');
     const NUM_PARTICLES = 40;
-    const W = window.innerWidth; const H = window.innerHeight;
     for(let i=0;i<NUM_PARTICLES;i++){
-      const el = document.createElement('span');
-      el.className = 'particle';
-      const left = Math.random()*100;
-      const delay = Math.random()*-60;
-      const scale = 0.6 + Math.random()*1.6;
-      el.style.left = left + 'vw';
-      el.style.top = (Math.random()*120 - 10) + 'vh';
-      el.style.opacity = (0.02 + Math.random()*0.08);
-      el.style.width = (1 + Math.random()*2) + 'px';
-      el.style.height = el.style.width;
+      const el = document.createElement('span'); el.className = 'particle';
+      const left = Math.random()*100; const delay = Math.random()*-60; const scale = 0.6 + Math.random()*1.6;
+      el.style.left = left + 'vw'; el.style.top = (Math.random()*120 - 10) + 'vh';
+      el.style.opacity = (0.52 + Math.random()*0.08);
+      el.style.width = (1 + Math.random()*2) + 'px'; el.style.height = el.style.width;
       el.style.transform = `scale(${scale})`;
-      el.style.animationDuration = (30 + Math.random()*70) + 's';
-      el.style.animationDelay = delay + 's';
+      el.style.animationDuration = (30 + Math.random()*70) + 's'; el.style.animationDelay = delay + 's';
       particlesRoot.appendChild(el);
     }
 
-    /* ======= Accessibility & small niceties ======= */
+    /* ======= Acessibilidade & pequenos ajustes ======= */
     passInput.focus();
-
-    window.addEventListener('keydown', e => {
-      if(e.key === 'Enter'){
-        const active = document.activeElement;
-        if(active !== passInput && active !== userInput){
-          e.preventDefault();
-        }
-      }
-    });
-
+    window.addEventListener('keydown', e => { if(e.key === 'Enter'){ const active = document.activeElement; if(active !== passInput && active !== userInput){ e.preventDefault(); } } });
     userInput.addEventListener('paste', e => { e.preventDefault(); });
   </script>
 
