@@ -41,7 +41,8 @@
     .file-card{position:relative;padding:12px;border-radius:8px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.06));cursor:pointer;user-select:none;display:flex;gap:10px;align-items:center;transition:transform .18s ease,box-shadow .18s ease}
     .file-card:hover{transform:translateY(-6px);box-shadow:0 8px 30px rgba(0,0,0,0.6)}
     .file-card.selected{outline:2px solid rgba(217,217,217,0.06);box-shadow:0 10px 40px rgba(0,0,0,0.7)}
-    .file-icon{width:44px;height:44px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.02)}
+    .file-icon{width:44px;height:44px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.02);overflow:hidden}
+    .thumb{width:44px;height:44px;object-fit:cover;display:block}
     .file-meta{flex:1;overflow:hidden}
     .file-name{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .file-sub{font-size:9px;color:var(--muted);margin-top:6px}
@@ -170,12 +171,12 @@
   <script>
     /* ======= DADOS DE EXEMPLO ======= */
     const files = [
-      {id:1,name:'Projeto_Manual.pdf',type:'pdf',date:'2025-08-07',size:'1.2 MB',suspicious:false,forbidden:false},
-      {id:2,name:'DOC_SECRET.txt',type:'txt',date:'2025-08-05',size:'4 KB',suspicious:true,forbidden:false},
-      {id:3,name:'gallery_01.png',type:'img',date:'2025-07-21',size:'2.6 MB',suspicious:false,forbidden:false},
-      {id:4,name:'FORBIDDEN.EXE',type:'exe',date:'2003-11-11',size:'512 KB',suspicious:true,forbidden:true},
-      {id:5,name:'note.wav',type:'audio',date:'2025-06-01',size:'320 KB',suspicious:false,forbidden:false},
-      {id:6,name:'readme.md',type:'txt',date:'2025-08-06',size:'2 KB',suspicious:false,forbidden:false}
+      {id:1,name:'Projeto_Manual.pdf',type:'pdf',date:'2025-08-07',size:'1.2 MB',suspicious:false,forbidden:false,thumb:'assets/thumb_pdf.png'},
+      {id:2,name:'DOC_SECRET.txt',type:'txt',date:'2025-08-05',size:'4 KB',suspicious:true,forbidden:false,thumb:''},
+      {id:3,name:'gallery_01.png',type:'img',date:'2025-07-21',size:'2.6 MB',suspicious:false,forbidden:false,thumb:'assets/gallery_01.png'},
+      {id:4,name:'FORBIDDEN.EXE',type:'exe',date:'2003-11-11',size:'512 KB',suspicious:true,forbidden:true,thumb:''},
+      {id:5,name:'note.wav',type:'audio',date:'2025-06-01',size:'320 KB',suspicious:false,forbidden:false,thumb:''},
+      {id:6,name:'readme.md',type:'txt',date:'2025-08-06',size:'2 KB',suspicious:false,forbidden:false,thumb:''}
     ];
 
     /* ======= CACHE DOS ELEMENTOS ======= */
@@ -202,9 +203,10 @@
       grid.innerHTML = list.map(f=>{
         const sus = f.suspicious? 'sus':'';
         const badge = f.forbidden? '<div class="badge">PROIBIDO</div>':'';
+        const thumb = f.thumb? `<img class="thumb" src="${f.thumb}" alt="thumb">` : '';
         return `
           <div class="file-card ${sus}" data-id="${f.id}" role="listitem" tabindex="0">
-            <div class="file-icon" aria-hidden="true">${iconFor(f.type)}</div>
+            <div class="file-icon" aria-hidden="true">${thumb}${iconFor(f.type)}</div>
             <div class="file-meta">
               <div class="file-name">${escapeHTML(f.name)}</div>
               <div class="file-sub">${f.date} • ${f.size}</div>
@@ -289,7 +291,16 @@
       if(file.forbidden){ triggerForbiddenEvent(file); return; }
       sOpen && sOpen.play().catch(()=>{});
       modalTitle.textContent = file.name;
-      modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px">Visualizando: ${escapeHTML(file.name)}<br><small style=\"color:var(--muted)\">${file.date} • ${file.size}</small></div>`;
+      // mostra preview adequado por tipo
+      if(file.type==='img'){
+        modalPreview.innerHTML = `<img src="assets/${file.name}" alt="${escapeHTML(file.name)}" style="max-width:100%;height:auto;border-radius:6px"/>`;
+      } else if(file.type==='audio'){
+        modalPreview.innerHTML = `<audio controls src="sounds/${file.name}"></audio>`;
+      } else if(file.type==='pdf'){
+        modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px">PDF — visualização simulada: ${escapeHTML(file.name)}</div>`;
+      } else {
+        modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px">Visualizando: ${escapeHTML(file.name)}<br><small style=\"color:var(--muted)\">${file.date} • ${file.size}</small></div>`;
+      }
       modal.classList.add('show');
       statusText.textContent = 'Visualizando: ' + file.name;
     }
@@ -354,7 +365,7 @@
     function parseSize(s){ if(!s) return 0; if(s.includes('MB')) return parseFloat(s)*1024; if(s.includes('KB')) return parseFloat(s); return 0; }
 
     /* ======= UTILIDADES ======= */
-    function escapeHTML(str){ return String(str).replace(/[&<>"']/g, tag=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[tag])); }
+    function escapeHTML(str){ return String(str).replace(/[&<>\"']/g, tag=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[tag])); }
 
     /* ======= RELOGIO (segundos pares) ======= */
     function evenClockTick(el){
@@ -368,16 +379,29 @@
     evenClockTick(document.getElementById('clock'));
 
     /* ======= AUDIO & CONTROLES ======= */
-    let audioOn = true;
-    function tryPlayAmbient(){ ambient.volume = 0.12; ambient.play().catch(()=>{ audioOn=false; audioIcon.src='assets/icon-sound-off.svg'; }); }
+    let audioOn = false;
+    function tryPlayAmbient(){
+      ambient.volume = 0.12;
+      ambient.play().then(()=>{ audioOn = true; audioIcon.src = 'assets/icon-sound-on.svg'; }).catch(()=>{ audioOn = false; audioIcon.src = 'assets/icon-sound-off.svg'; });
+    }
+    // Alguns navegadores bloqueiam autoplay — ativar no primeiro gesto do usuário
+    function enableAmbientOnGesture(){
+      document.addEventListener('pointerdown', async ()=>{
+        try{
+          ambient.volume = 0.12; await ambient.play(); audioOn = true; audioIcon.src = 'assets/icon-sound-on.svg';
+        }catch(e){ audioOn = false; audioIcon.src = 'assets/icon-sound-off.svg'; }
+      }, {once:true});
+    }
+    enableAmbientOnGesture();
     tryPlayAmbient();
+
     audioToggle.addEventListener('click', ()=>{
       audioOn = !audioOn;
       if(audioOn){ ambient.play().catch(()=>{}); audioIcon.src='assets/icon-sound-on.svg'; }
       else{ ambient.pause(); audioIcon.src='assets/icon-sound-off.svg'; }
     });
 
-    /* ======= TRANSIÇÃO DE ENTRADA (fade + glitch) ======= */
+    /* ======= TRANSIÇÃO DE ENTRADA" (fade + glitch) ======= */
     window.addEventListener('load', ()=>{
       document.body.classList.add('loaded');
       // entrada leve com glitch (desaparece em 600ms)
