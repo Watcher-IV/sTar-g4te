@@ -58,7 +58,7 @@
 
     /* Borda decorativa via pseudo-element (mais controle e transparência) */
     .login-card::before{
-      content:"";position:absolute;inset:-18px;border-radius:12px;pointer-events:none;background-image:url('assets/border.png');background-repeat:no-repeat;background-size:cover;opacity:0.95;mix-blend-mode:screen;filter:grayscale(1) brightness(0.95) contrast(1.05);
+      content:"";position:absolute;left:50%;top:50%;width:calc(100% + 80px);height:calc(100% + 80px);transform:translate(-50%,-50%);background-image:url('assets/border.png');background-repeat:no-repeat;background-position:center;background-size:contain;opacity:0.95;pointer-events:none;filter:grayscale(1) brightness(0.95) contrast(1.05);
     }
 
     /* CAMPOS */
@@ -186,7 +186,7 @@
       const el = document.createElement('span'); el.className = 'particle';
       const left = Math.random()*100; const delay = Math.random()*-60; const scale = 0.6 + Math.random()*1.6;
       el.style.left = left + 'vw'; el.style.top = (Math.random()*120 - 10) + 'vh';
-      el.style.opacity = (0.52 + Math.random()*0.08);
+      el.style.opacity = (0.10 + Math.random()*0.08);
       el.style.width = (1 + Math.random()*2) + 'px'; el.style.height = el.style.width;
       el.style.transform = `scale(${scale})`;
       el.style.animationDuration = (30 + Math.random()*70) + 's'; el.style.animationDelay = delay + 's';
