@@ -12,7 +12,7 @@
     html,body{height:100%;font-family:'Press Start 2P',monospace;background:var(--bg);color:var(--light);-webkit-font-smoothing:none;overflow:hidden}
 
     /* ======= FUNDO E OVERLAYS (scanlines, grain, vignette) ======= */
-    .bg-wrap{position:fixed;inset:0;z-index:0;background:url('assets/future-vision.png') center/cover no-repeat;filter:blur(2px) brightness(0.45)}
+    .bg-wrap{position:fixed;inset:0;z-index:0;background:url('assets/forgotten.png') center/cover no-repeat;filter:blur(2px) brightness(0.45)}
     .overlay-scanlines{position:fixed;inset:0;pointer-events:none;background-image:repeating-linear-gradient(0deg, rgba(217,217,217,0.02) 0 1px, transparent 1px 3px);mix-blend-mode:screen;z-index:1;opacity:0.6;animation:scan-move 12s linear infinite}
     @keyframes scan-move{from{background-position-y:0}to{background-position-y:40px}}
     .grain{position:fixed;inset:0;pointer-events:none;z-index:1;opacity:0.05;background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><filter id="n"><feTurbulence baseFrequency="0.9" numOctaves="1" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)"/></svg>');background-size:200px 200px}
