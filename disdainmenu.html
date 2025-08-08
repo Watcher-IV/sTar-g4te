@@ -169,14 +169,15 @@
   <audio id="sError" src="sounds/error.wav" preload="auto"></audio>
 
   <script>
-    /* ======= DADOS DE EXEMPLO ======= */
+    /* ======= DADOS DE EXEMPLO (com placeholders) ======= */
     const files = [
-      {id:1,name:'Projeto_Manual.pdf',type:'pdf',date:'2025-08-07',size:'1.2 MB',suspicious:false,forbidden:false,thumb:'assets/thumb_pdf.png'},
-      {id:2,name:'DOC_SECRET.txt',type:'txt',date:'2025-08-05',size:'4 KB',suspicious:true,forbidden:false,thumb:''},
-      {id:3,name:'gallery_01.png',type:'img',date:'2025-07-21',size:'2.6 MB',suspicious:false,forbidden:false,thumb:'assets/gallery_01.png'},
-      {id:4,name:'FORBIDDEN.EXE',type:'exe',date:'2003-11-11',size:'512 KB',suspicious:true,forbidden:true,thumb:''},
-      {id:5,name:'note.wav',type:'audio',date:'2025-06-01',size:'320 KB',suspicious:false,forbidden:false,thumb:''},
-      {id:6,name:'readme.md',type:'txt',date:'2025-08-06',size:'2 KB',suspicious:false,forbidden:false,thumb:''}
+      {id:1,name:'Затонувшая_Звезда.img',type:'img',date:'2025-08-07',size:'3.4 MB',suspicious:false,forbidden:false,thumb:'assets/placeholder_star.png'},
+      {id:2,name:'Пепел_Река_3.doc',type:'txt',date:'2025-08-05',size:'6 KB',suspicious:true,forbidden:false,thumb:'assets/placeholder_ash.png'},
+      {id:3,name:'Seb-IV_bio.html',type:'html',date:'2025-07-21',size:'2.1 KB',suspicious:false,forbidden:false,thumb:'assets/placeholder_bio.png'},
+      {id:4,name:'母の声.mp3',type:'audio',date:'2003-11-11',size:'512 KB',suspicious:true,forbidden:false,thumb:'assets/placeholder_mother.png'},
+      {id:5,name:'ObsЛom-9.log',type:'txt',date:'2025-06-01',size:'24 KB',suspicious:false,forbidden:false,thumb:'assets/placeholder_log.png'},
+      {id:6,name:'coração.tga',type:'img',date:'2025-08-06',size:'4.3 MB',suspicious:false,forbidden:false,thumb:'assets/placeholder_heart.png'},
+      {id:7,name:'Крест-Из-Нервов.x',type:'x',date:'2020-01-01',size:'0 B',suspicious:true,forbidden:false,thumb:'assets/placeholder_cross.png'}
     ];
 
     /* ======= CACHE DOS ELEMENTOS ======= */
@@ -219,7 +220,6 @@
     }
 
     function iconFor(type){
-      // simples ícones textuais para referência — você pode trocar por SVGs em assets/
       switch(type){
         case 'pdf': return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" fill="rgba(255,255,255,0.03)" rx="4"/></svg>';
         case 'img': return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" fill="rgba(255,255,255,0.02)" rx="4"/></svg>';
@@ -244,13 +244,8 @@
           openContextMenu(ev.clientX, ev.clientY);
         };
         card.onmouseover = (ev)=>{
-          // tooltip secreto em arquivos suspeitos
           const file = files.find(f=>f.id===id);
-          if(file && file.suspicious){
-            // adiciona pequeno tooltip com mensagem
-            // usamos title attr como fallback
-            card.title = 'VOCÊ NÃO DEVERIA ESTAR AQUI';
-          }
+          if(file && file.suspicious){ card.title = 'VOCÊ NÃO DEVERIA ESTAR AQUI'; }
         };
       });
     }
@@ -284,20 +279,40 @@
       contextMenu.style.display = 'none';
     });
 
-    /* ======= ABRIR / PREVIEW / FORBIDDEN ======= */
+    /* ======= ABRIR / PREVIEW / FORBIDDEN + EVENTO ESPECIAL DO ARQUIVO 'Крест-Из-Нервов.x' ======= */
     function openFile(id){
       const file = files.find(f=>f.id===id);
       if(!file) return;
+      // Evento especial: Крест-Из-Нервов.x
+      if(file.name === 'Крест-Из-Нервов.x'){
+        // pisca a tela e altera sutilmente o menu
+        document.querySelector('.app').classList.add('error-glitch');
+        setTimeout(()=>document.querySelector('.app').classList.remove('error-glitch'),700);
+        // modifica o botão de propriedades por um tempo
+        const propBtn = contextMenu.querySelector('[data-action="properties"]');
+        if(propBtn){
+          const original = propBtn.textContent;
+          propBtn.textContent = 'Propriedades • ∆';
+          setTimeout(()=>{ propBtn.textContent = original; }, 4500);
+        }
+        // não abre preview real
+        sError && sError.play().catch(()=>{});
+        return;
+      }
+
       if(file.forbidden){ triggerForbiddenEvent(file); return; }
       sOpen && sOpen.play().catch(()=>{});
       modalTitle.textContent = file.name;
       // mostra preview adequado por tipo
       if(file.type==='img'){
-        modalPreview.innerHTML = `<img src="assets/${file.name}" alt="${escapeHTML(file.name)}" style="max-width:100%;height:auto;border-radius:6px"/>`;
+        modalPreview.innerHTML = `<img src="assets/${encodeURIComponent(file.name)}" alt="${escapeHTML(file.name)}" style="max-width:100%;height:auto;border-radius:6px"/>`;
       } else if(file.type==='audio'){
-        modalPreview.innerHTML = `<audio controls src="sounds/${file.name}"></audio>`;
+        modalPreview.innerHTML = `<audio controls src="sounds/${encodeURIComponent(file.name)}"></audio>`;
       } else if(file.type==='pdf'){
         modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px">PDF — visualização simulada: ${escapeHTML(file.name)}</div>`;
+      } else if(file.type==='html'){
+        modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px">HTML corrompido (placeholder):<pre style=\"color:var(--muted);font-size:10px;white-space:pre-wrap\">&lt;!-- conteúdo corrompido --&gt;
+${escapeHTML(file.name)}</pre></div>`;
       } else {
         modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px">Visualizando: ${escapeHTML(file.name)}<br><small style=\"color:var(--muted)\">${file.date} • ${file.size}</small></div>`;
       }
@@ -307,11 +322,9 @@
 
     function triggerForbiddenEvent(file){
       sError && sError.play().catch(()=>{});
-      // efeito: tela de erro grande com mensagem e glitch
       modalTitle.textContent = 'ERRO: ACESSO NEGADO';
       modalPreview.innerHTML = `<div style="padding:18px;color:var(--light);text-align:center;font-size:13px">VOCÊ NÃO DEVERIA ESTAR AQUI<br><small style=\"color:var(--muted)\">Evento gerado ao tentar abrir ${escapeHTML(file.name)}</small></div>`;
       modal.classList.add('show');
-      // breve glitch visual
       document.querySelector('.app').classList.add('error-glitch');
       setTimeout(()=>{ document.querySelector('.app').classList.remove('error-glitch'); },1200);
     }
@@ -365,7 +378,7 @@
     function parseSize(s){ if(!s) return 0; if(s.includes('MB')) return parseFloat(s)*1024; if(s.includes('KB')) return parseFloat(s); return 0; }
 
     /* ======= UTILIDADES ======= */
-    function escapeHTML(str){ return String(str).replace(/[&<>\"']/g, tag=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[tag])); }
+    function escapeHTML(str){ return String(str).replace(/[&<>"']/g, tag=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[tag])); }
 
     /* ======= RELOGIO (segundos pares) ======= */
     function evenClockTick(el){
@@ -401,7 +414,7 @@
       else{ ambient.pause(); audioIcon.src='assets/icon-sound-off.svg'; }
     });
 
-    /* ======= TRANSIÇÃO DE ENTRADA" (fade + glitch) ======= */
+    /* ======= TRANSIÇÃO DE ENTRADA (fade + glitch) ======= */
     window.addEventListener('load', ()=>{
       document.body.classList.add('loaded');
       // entrada leve com glitch (desaparece em 600ms)
