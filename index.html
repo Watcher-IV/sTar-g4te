@@ -1,172 +1,273 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Login — Archive</title>
+  <!-- Fonte: Press Start 2P (vibe pixel). Você pode substituir por qualquer fonte local/remota. -->
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
-    @font-face {
-      font-family: 'PixelFont';
-      src: url('pixel-font.ttf') format('truetype');
+    /* Reset (zerar estilos) */
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+
+    /* Estética preto & branco */
+    body{
+      background:#000;
+      color:#fff;
+      font-family: 'Press Start 2P', monospace;
+      -webkit-font-smoothing: none;
+      -moz-osx-font-smoothing: grayscale;
+      overflow:hidden;
     }
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body {
-      background-color: #000000;
-      font-family: 'PixelFont', monospace;
-      color: #d1d1d1;
-      overflow: hidden;
+
+    /* Sobreposição CRT / qualidade degradada para vibe PS1/PS2 */
+    .overlay-scanlines{
+      position:fixed;inset:0;pointer-events:none;
+      background-image:
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 3px),
+        radial-gradient(ellipse at center, rgba(255,255,255,0.02) 0%, transparent 40%);
+      mix-blend-mode:screen;
+      z-index:9998;
+      opacity:0.7;
+      transform:scale(1.02);
+      filter: contrast(1.2) brightness(0.95);
     }
-    canvas#dust {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw; height: 100vh;
-      z-index: 999;
-      pointer-events: none;
+
+    /* Granulação / ruído sutil */
+    .grain{
+      position:fixed;inset:0;pointer-events:none;z-index:9997;opacity:0.06;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><filter id="n"><feTurbulence baseFrequency="0.8" numOctaves="1" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)"/></svg>');
+      background-size:200px 200px;
     }
-    .container {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 1;
+
+    /* Área central */
+    .wrap{
+      position:relative;z-index:10;min-height:100vh;display:flex;align-items:center;justify-content:center;
     }
-    .border-box {
-      border: 12px solid transparent;
-      border-image: url('border.png') 30 round;
-      padding: 5px;
+
+    /* Caixa de login */
+    .login-card{
+      width:420px;max-width:92vw;padding:36px 28px;border-radius:10px;position:relative;
+      background: rgba(0,0,0,0.6);backdrop-filter: blur(1px);
+      border:18px solid transparent;
+      border-image-source: url('assets/border.png');
+      border-image-slice: 30 fill;
+      border-image-width: 18;
+      border-image-outset: 0;
+      border-image-repeat: round;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.7), inset 0 0 30px rgba(255,255,255,0.02);
+      text-align:center;
     }
-    .login-box {
-      background-color: rgba(0,0,0,0.85);
-      padding: 30px;
-      text-align: center;
-      filter: blur(0.5px);
+
+    /* Título */
+    .title{font-size:14px;letter-spacing:2px;margin-bottom:18px;filter: blur(0.3px);}
+
+    /* Campos (inputs) */
+    .field{display:block;width:100%;margin:10px 0;padding:14px 12px;border-radius:6px;background:#000;border:2px solid #fff;color:#fff;outline:none;font-size:11px}
+    .field::placeholder{color:rgba(255,255,255,0.5)}
+
+    /* Botão de submissão invisível — não será mostrado, mantido apenas por semântica (oculto) */
+    .hidden-submit{display:none}
+
+    /* Texto de ajuda */
+    .hint{margin-top:12px;font-size:10px;color:rgba(255,255,255,0.6)}
+
+    /* Contêiner de partículas */
+    .particles{position:fixed;inset:0;pointer-events:none;z-index:2}
+    .particle{
+      position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;opacity:0.06;filter:blur(0.2px);
+      animation: floaty linear infinite;
     }
-    .login-box h1 {
-      font-size: 18px;
-      margin-bottom: 20px;
-      filter: blur(0.6px);
+    @keyframes floaty{
+      from{transform:translateY(-10vh)}
+      to{transform:translateY(110vh)}
     }
-    input {
-      display: block;
-      width: 300px;
-      margin: 10px auto;
-      padding: 10px;
-      background: #111;
-      border: 1px solid #444;
-      color: #d1d1d1;
-      font-size: 14px;
-      filter: blur(0.4px);
-    }
-    #glitch-img {
-      position: fixed;
-      top:0; left:0;
-      width:100vw; height:100vh;
-      object-fit:cover;
-      z-index:1000;
+
+    /* Pop-up modal (estilizado como alerta do navegador) */
+    .modal{
+      position:fixed;left:50%;top:20%;transform:translateX(-50%);min-width:320px;max-width:90vw;background:#0b0b0b;border:2px solid #fff;padding:16px;border-radius:6px;z-index:9999;box-shadow:0 8px 40px rgba(0,0,0,0.85);
       display:none;
     }
-    .intro-screen {
-      display: none;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      color: white;
-      z-index: 1001;
-      text-align: center;
-      font-size: 18px;
-    }
+    .modal.show{display:block}
+    .modal .modal-inner{font-size:12px;line-height:1.3;}
+    .modal .modal-img{max-width:100%;display:block;margin:8px auto}
+    .modal .close{display:inline-block;margin-top:12px;padding:8px 10px;border:1px solid #fff;border-radius:4px;cursor:pointer}
+
+    /* Mensagem final com fade */
+    .fade-wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;z-index:10001;opacity:0;pointer-events:none;transition:opacity 1.4s ease-in;}
+    .fade-wrap.show{opacity:1;pointer-events:auto}
+    .fade-text{font-size:12px;text-align:center;max-width:90vw}
+
+    /* Pequeno efeito glitch para o texto */
+    .glitch{position:relative}
+    .glitch::after,.glitch::before{content:attr(data-text);position:absolute;left:0;top:0;opacity:.7}
+    .glitch::before{clip-path:inset(0 0 66% 0);transform:translate(2px,-2px) skewX(-8deg)}
+    .glitch::after{clip-path:inset(66% 0 0 0);transform:translate(-2px,2px) skewX(8deg)}
+
+    /* Deixar texto levemente pixelizado/borrado */
+    .pixel-blur{filter: blur(0.4px);}
+
+    /* Pequenos ajustes responsivos */
+    @media (max-width:420px){.login-card{padding:22px}}
   </style>
 </head>
 <body>
-  <canvas id="dust"></canvas>
-  <img src="lingering.png" id="glitch-img" alt="glitch" />
 
-  <!-- MENSAGEM APÓS LOGIN -->
-  <div class="intro-screen" id="introScreen">
-    <div class="intro-text">Bem vindo devolta, eu estava com saudade.</div>
-  </div>
+  <div class="overlay-scanlines"></div>
+  <div class="grain"></div>
+  <div class="particles" id="particles"></div>
 
-  <!-- TELA DE LOGIN -->
-  <div class="container login-container" id="loginContainer">
-    <div class="border-box">
-      <div class="login-box">
-        <input type="text" id="username" placeholder="Usuário" autocomplete="off" />
-        <input type="password" id="password" placeholder="Senha" autocomplete="off" />
-      </div>
+  <div class="wrap">
+    <div class="login-card" role="main" aria-labelledby="title">
+      <div id="title" class="title pixel-blur glitch" data-text="ACCESS PORTAL">ACCESS PORTAL</div>
+
+      <label for="user" style="display:none">Usuário</label>
+      <input id="user" class="field" type="text" placeholder="Usuário" autocomplete="off" autocapitalize="characters" spellcheck="false" value="" />
+
+      <label for="pass" style="display:none">Senha</label>
+      <input id="pass" class="field" type="password" placeholder="Senha" autocomplete="off" spellcheck="false" />
+
+      <div class="hint">Pressione <strong>ENTER</strong> para submeter — nenhum botão visível.</div>
     </div>
   </div>
 
+  <!-- Modal pop-up (custom) -->
+  <div id="modal" class="modal" role="dialog" aria-modal="true">
+    <div class="modal-inner" id="modalInner"></div>
+    <img id="modalImg" class="modal-img" src="" alt="" style="display:none"/>
+    <div style="text-align:right"><button id="modalClose" class="close">OK</button></div>
+  </div>
+
+  <!-- Fade-out final mensagem -->
+  <div id="fadeWrap" class="fade-wrap">
+    <div class="fade-text pixel-blur glitch" data-text="Bem vindo de volta. Eu estava com saudades.">Bem vindo de volta. Eu estava com saudades.</div>
+  </div>
+
   <script>
-    // partículas
-    const canvas = document.getElementById('dust');
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth; 
-    canvas.height = window.innerHeight;
-    let particles = [];
-    for (let i = 0; i < 100; i++) {
-      particles.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        r: Math.random() * 2 + 0.5,
-        d: Math.random() * 0.5 + 0.2
-      });
-    }
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = 'rgba(255,255,255,0.1)';
-      particles.forEach(p => {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, 2 * Math.PI);
-        ctx.fill();
-        p.y -= p.d;
-        if (p.y < 0) {
-          p.y = canvas.height;
-          p.x = Math.random() * canvas.width;
-        }
-      });
-      requestAnimationFrame(draw);
-    }
-    draw();
+    /* ======= CONFIG (edite conforme quiser) ======= */
+    const VALID_USER = 'SEBASTIAN-IV';
+    const VALID_PASS = 'drownedstar7';
 
-    // login
-    const userOk = 'Sebastian-IV', passOk = 'drownedstar2009';
-    const errors = [
-      'Você consegue me ver?',
-      'Sistema comprometido: ⸮#ƨⱯ⌐₴⟟∰𝖊⟬g̸...',
-      '**⸮#ƨⱯ⌐₴⟟∰𝖊⟬g̸̡̛̛̤͆̈́͌͘͜l̷͉̥̹̺̟͇̯̾ͅ!₴⟟∰𝖊⟬g̸̡̛̛̤͆̈́͌͘͜l̷͉̥̹̺̟͇̯̾ͅ!₴⟟∰𝖊⟬g̸̡̛̛̤͆̈́͌͘͜l̷͉̥̹̺̟͇̯̾ͅ!₴⟟∰𝖊⟬g̸̡̛̛̤͆̈́͌͘͜l̷͉̥̹̺̟͇̯̾ͅ!',
-      'Filha?.',
-      'Não saia daqui... nunca.',
-      'Meu olhar está em você.'
+    const ERROR_MESSAGES = [
+      'PLACEHOLDER_MSG_1',
+      'PLACEHOLDER_MSG_2',
+      'PLACEHOLDER_MSG_3',
+      'PLACEHOLDER_MSG_4',
+      'PLACEHOLDER_MSG_5',
+      'PLACEHOLDER_MSG_6',
+      'PLACEHOLDER_MSG_7',
+      'PLACEHOLDER_MSG_8'
     ];
-    const glitchImg = document.getElementById('glitch-img');
 
-    function attemptLogin() {
-      const u = document.getElementById('username').value;
-      const p = document.getElementById('password').value;
+    const RARE_IMG_PATH = 'assets/lingering.png';
+    const RARE_PROBABILITY = 0.08;
 
-      if (u === userOk && p === passOk) {
-        document.getElementById('loginContainer').style.display = 'none';
-        document.getElementById('introScreen').style.display = 'block';
+    /* ======= UI ======= */
+    const userInput = document.getElementById('user');
+    const passInput = document.getElementById('pass');
+    const modal = document.getElementById('modal');
+    const modalInner = document.getElementById('modalInner');
+    const modalImg = document.getElementById('modalImg');
+    const modalClose = document.getElementById('modalClose');
+    const fadeWrap = document.getElementById('fadeWrap');
 
-        setTimeout(() => {
-          alert('Login bem-sucedido.');
-          // Aqui você pode redirecionar se quiser
-        }, 2000);
+    userInput.addEventListener('input', e => {
+      userInput.value = userInput.value.toUpperCase();
+    });
+
+    passInput.addEventListener('keydown', function(e){
+      if(e.key === 'Enter'){
+        e.preventDefault();
+        attemptLogin();
+      }
+    });
+
+    userInput.addEventListener('keydown', function(e){
+      if(e.key === 'Enter'){
+        e.preventDefault();
+        passInput.focus();
+      }
+    });
+
+    modalClose.addEventListener('click', ()=>{
+      hideModal();
+      passInput.focus();
+    });
+
+    function showModal({text=null,img=null}){
+      if(img){
+        modalImg.src = img; modalImg.style.display = 'block'; modalInner.style.display='none';
       } else {
-        const msg = errors[Math.floor(Math.random() * errors.length)];
-        if (Math.random() < 0.2) {
-          glitchImg.style.display = 'block';
-          setTimeout(() => location.reload(), 1000);
-        } else {
-          alert(msg);
-          location.reload();
-        }
+        modalImg.style.display = 'none'; modalInner.style.display='block'; modalInner.textContent = text;
+      }
+      modal.classList.add('show');
+    }
+    function hideModal(){ modal.classList.remove('show'); }
+
+    function attemptLogin(){
+      const u = (userInput.value||'').trim();
+      const p = (passInput.value||'').trim();
+
+      if(u === VALID_USER && p === VALID_PASS){
+        doSuccess();
+      } else {
+        showRandomError();
       }
     }
 
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Enter') attemptLogin();
+    function doSuccess(){
+      document.body.style.transition = 'filter 1s ease';
+      document.body.style.filter = 'contrast(0.6) blur(0.5px)';
+      fadeWrap.classList.add('show');
+    }
+
+    function showRandomError(){
+      const rareRoll = Math.random();
+      if(rareRoll < RARE_PROBABILITY){
+        showModal({img:RARE_IMG_PATH});
+        return;
+      }
+      const msg = ERROR_MESSAGES[Math.floor(Math.random()*ERROR_MESSAGES.length)];
+      const percent = (Math.random()*100).toFixed(2) + '%';
+      showModal({text: msg + ' — ' + percent});
+    }
+
+    /* ======= Geração de partículas (poeira flutuante bem lenta) ======= */
+    const particlesRoot = document.getElementById('particles');
+    const NUM_PARTICLES = 40;
+    const W = window.innerWidth; const H = window.innerHeight;
+    for(let i=0;i<NUM_PARTICLES;i++){
+      const el = document.createElement('span');
+      el.className = 'particle';
+      const left = Math.random()*100;
+      const delay = Math.random()*-60;
+      const scale = 0.6 + Math.random()*1.6;
+      el.style.left = left + 'vw';
+      el.style.top = (Math.random()*120 - 10) + 'vh';
+      el.style.opacity = (0.02 + Math.random()*0.08);
+      el.style.width = (1 + Math.random()*2) + 'px';
+      el.style.height = el.style.width;
+      el.style.transform = `scale(${scale})`;
+      el.style.animationDuration = (30 + Math.random()*70) + 's';
+      el.style.animationDelay = delay + 's';
+      particlesRoot.appendChild(el);
+    }
+
+    /* ======= Accessibility & small niceties ======= */
+    passInput.focus();
+
+    window.addEventListener('keydown', e => {
+      if(e.key === 'Enter'){
+        const active = document.activeElement;
+        if(active !== passInput && active !== userInput){
+          e.preventDefault();
+        }
+      }
     });
+
+    userInput.addEventListener('paste', e => { e.preventDefault(); });
   </script>
+
 </body>
 </html>
