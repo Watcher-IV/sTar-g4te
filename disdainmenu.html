@@ -77,10 +77,6 @@
     .secret .tooltip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#070707;padding:8px;border-radius:6px;border:1px solid rgba(217,217,217,0.08);font-size:10px;color:var(--light);display:none;white-space:nowrap}
     .secret:hover .tooltip{display:block}
 
-    /* overlay de ativação de som (fallback autoplay) */
-    #audioOverlay{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3000;background:rgba(0,0,0,0.8);padding:18px;border-radius:10px;border:1px solid rgba(217,217,217,0.08);display:none;align-items:center;gap:12px}
-    #audioOverlay button{padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--light);cursor:pointer}
-
     /* reduz movimento se usuário preferir */
     @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
@@ -150,9 +146,6 @@
     </footer>
   </div>
 
-  <!-- overlay áudio -->
-  <div id="audioOverlay"><div style="font-size:12px;color:var(--light);">Clique para ativar som e ambiência</div><button id="activateAudio">Ativar som</button></div>
-
   <!-- CONTEXT MENU -->
   <div id="contextMenu" class="context-menu" role="menu">
     <button data-action="open">Abrir</button>
@@ -201,8 +194,6 @@
     const sError = document.getElementById('sError');
     const audioToggle = document.getElementById('audioToggle');
     const audioIcon = document.getElementById('audioIcon');
-    const audioOverlay = document.getElementById('audioOverlay');
-    const activateAudio = document.getElementById('activateAudio');
 
     let selected = new Set();
     let currentContextId = null;
@@ -388,29 +379,21 @@
     evenClockTick(document.getElementById('clock'));
 
     /* ======= AUDIO & CONTROLES ======= */
-    let selected = new Set();
-    let audioOn = true;
-    // garantir loop e volume 100%
-    ambient.loop = true; ambient.volume = 1.0;
-
-    function attemptAutoplay(){
-      ambient.play().then(()=>{
-        audioOn = true; audioIcon.src = 'assets/icon-sound-on.svg'; audioOverlay.style.display='none';
-      }).catch(()=>{
-        // autoplay bloqueado — mostra overlay para ativação manual
-        audioOn = false; audioIcon.src = 'assets/icon-sound-off.svg'; audioOverlay.style.display='flex';
-      });
+    let audioOn = false;
+    function tryPlayAmbient(){
+      ambient.volume = 0.12;
+      ambient.play().then(()=>{ audioOn = true; audioIcon.src = 'assets/icon-sound-on.svg'; }).catch(()=>{ audioOn = false; audioIcon.src = 'assets/icon-sound-off.svg'; });
     }
-
-    window.addEventListener('load', ()=>{
-      attemptAutoplay();
-      renderFiles(files);
-    });
-
-    activateAudio.addEventListener('click', async ()=>{
-      try{ ambient.volume = 1.0; await ambient.play(); audioOn = true; audioIcon.src='assets/icon-sound-on.svg'; audioOverlay.style.display='none'; }
-      catch(e){ audioOn = false; audioIcon.src='assets/icon-sound-off.svg'; }
-    });
+    // Alguns navegadores bloqueiam autoplay — ativar no primeiro gesto do usuário
+    function enableAmbientOnGesture(){
+      document.addEventListener('pointerdown', async ()=>{
+        try{
+          ambient.volume = 0.12; await ambient.play(); audioOn = true; audioIcon.src = 'assets/icon-sound-on.svg';
+        }catch(e){ audioOn = false; audioIcon.src = 'assets/icon-sound-off.svg'; }
+      }, {once:true});
+    }
+    enableAmbientOnGesture();
+    tryPlayAmbient();
 
     audioToggle.addEventListener('click', ()=>{
       audioOn = !audioOn;
@@ -418,7 +401,7 @@
       else{ ambient.pause(); audioIcon.src='assets/icon-sound-off.svg'; }
     });
 
-    /* ======= TRANSIÇÃO DE ENTRADA (fade + glitch) ======= */
+    /* ======= TRANSIÇÃO DE ENTRADA" (fade + glitch) ======= */
     window.addEventListener('load', ()=>{
       document.body.classList.add('loaded');
       // entrada leve com glitch (desaparece em 600ms)
