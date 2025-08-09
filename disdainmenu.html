@@ -56,15 +56,25 @@
 
     /* CONTEXT MENU */
     .context-menu{position:fixed;z-index:2000;background:#0b0b0b;border:1px solid rgba(217,217,217,0.12);padding:6px;border-radius:6px;display:none;min-width:160px;box-shadow:0 8px 40px rgba(0,0,0,0.7)}
+    .context-menu.broken{pointer-events:none;opacity:0.5;transform:skewX(-6deg);filter:blur(1px) hue-rotate(-20deg)}
     .context-menu button{display:block;width:100%;padding:8px 10px;background:transparent;color:var(--light);border:none;text-align:left;font-size:12px;cursor:pointer}
     .context-menu button:hover{background:rgba(255,255,255,0.02)}
 
-    /* MODAL PREVIEW */
+    /* MODAL PREVIEW + GLITCH */
     .modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(0.98);min-width:360px;max-width:92vw;background:var(--glass);border-radius:10px;padding:18px;z-index:1500;display:none;box-shadow:0 14px 60px rgba(0,0,0,0.8)}
     .modal.show{display:block;animation:modal-in .28s ease forwards}
     @keyframes modal-in{from{opacity:0;transform:translate(-50%,-50%) scale(0.98)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
     .modal .preview{max-height:60vh;overflow:auto}
     .modal .title{font-size:12px;margin-bottom:6px}
+    .glitch-anim{animation:glitch 700ms steps(2) infinite}
+    @keyframes glitch{
+      0%{transform:translateX(0)}
+      20%{transform:translateX(-6px) skewX(-6deg)}
+      40%{transform:translateX(6px) skewX(6deg)}
+      60%{transform:translateX(-4px) skewX(-3deg)}
+      80%{transform:translateX(4px) skewX(3deg)}
+      100%{transform:translateX(0)}
+    }
 
     /* RODAPÉ */
     footer{height:44px;display:flex;align-items:center;justify-content:space-between;padding:8px 18px;color:var(--muted);font-size:11px}
@@ -169,14 +179,26 @@
   <audio id="sError" src="sounds/error.wav" preload="auto"></audio>
 
   <script>
-    /* ======= DADOS DE EXEMPLO (com placeholders) ======= */
+    /* ======= DADOS DE EXEMPLO (com placeholders adequados) ======= */
     const files = [
-      {id:1,name:'Затонувшая_Звезда.img',type:'img',date:'2025-08-07',size:'3.4 MB',suspicious:false,forbidden:false,thumb:'assets/placeholder_star.png'},
-      {id:2,name:'Пепел_Река_3.doc',type:'txt',date:'2025-08-05',size:'6 KB',suspicious:true,forbidden:false,thumb:'assets/placeholder_ash.png'},
-      {id:3,name:'Seb-IV_bio.html',type:'html',date:'2025-07-21',size:'2.1 KB',suspicious:false,forbidden:false,thumb:'assets/placeholder_bio.png'},
-      {id:4,name:'母の声.mp3',type:'audio',date:'2003-11-11',size:'512 KB',suspicious:true,forbidden:false,thumb:'assets/placeholder_mother.png'},
-      {id:5,name:'ObsЛom-9.log',type:'txt',date:'2025-06-01',size:'24 KB',suspicious:false,forbidden:false,thumb:'assets/placeholder_log.png'},
-      {id:6,name:'coração.tga',type:'img',date:'2025-08-06',size:'4.3 MB',suspicious:false,forbidden:false,thumb:'assets/placeholder_heart.png'},
+      {id:1,name:'Затонувшая_Звезда.img',type:'img',date:'2025-08-07',size:'3.4 MB',suspicious:false,forbidden:false,thumb:'assets/star_img.png',asset:'assets/star_img.png'},
+      {id:2,name:'Пепел_Река_3.doc',type:'txt',date:'2025-08-05',size:'6 KB',suspicious:true,forbidden:false,thumb:'assets/placeholder_ash.png',placeholderText:`Fragmento (placeholder):
+
+O diário descreve ruídos distantes sob as placas de gelo. Trechos ilegíveis.
+
+[Substitua este texto pelo conteúdo real]`},
+      {id:3,name:'Seb-IV_bio.html',type:'html',date:'2025-07-21',size:'2.1 KB',suspicious:false,forbidden:false,thumb:'assets/placeholder_bio.png',placeholderText:`Curriculum corrompido (placeholder):
+
+<-- conteúdo corrompido -->
+
+[Substitua pelo HTML real]`},
+      {id:4,name:'母の声.mp3',type:'audio',date:'2003-11-11',size:'512 KB',suspicious:true,forbidden:false,thumb:'assets/placeholder_mother.png',asset:'sounds/mother-audio.mp3'},
+      {id:5,name:'ObsЛom-9.log',type:'txt',date:'2025-06-01',size:'24 KB',suspicious:false,forbidden:false,thumb:'assets/placeholder_log.png',placeholderText:`Relatório (placeholder):
+
+Evento detectado: organismo psíquico em fenda. Sensores instáveis.
+
+[Substitua este texto pelo log real]`},
+      {id:6,name:'coração.tga',type:'img',date:'2025-08-06',size:'4.3 MB',suspicious:false,forbidden:false,thumb:'assets/hearth.png',asset:'assets/hearth.png'},
       {id:7,name:'Крест-Из-Нервов.x',type:'x',date:'2020-01-01',size:'0 B',suspicious:true,forbidden:false,thumb:'assets/placeholder_cross.png'}
     ];
 
@@ -287,15 +309,17 @@
       if(file.name === 'Крест-Из-Нервов.x'){
         // pisca a tela e altera sutilmente o menu
         document.querySelector('.app').classList.add('error-glitch');
-        setTimeout(()=>document.querySelector('.app').classList.remove('error-glitch'),700);
-        // modifica o botão de propriedades por um tempo
-        const propBtn = contextMenu.querySelector('[data-action="properties"]');
-        if(propBtn){
-          const original = propBtn.textContent;
-          propBtn.textContent = 'Propriedades • ∆';
-          setTimeout(()=>{ propBtn.textContent = original; }, 4500);
-        }
-        // não abre preview real
+        modalTitle.textContent = file.name;
+        modalPreview.innerHTML = `<div class=\"glitch-anim\" style=\"text-align:center;padding:12px;color:var(--light)\">
+          <img src=\"assets/placeholder_cross.png\" alt=\"cross\" style=\"max-width:60%;height:auto;border-radius:6px;margin-bottom:12px\"/>
+          <div style=\"font-size:12px;color:var(--muted)\">ALERTA — Instabilidade detectada.</div>
+          <pre style=\"color:var(--light);font-size:11px;white-space:pre-wrap;margin-top:8px\">[dados corrompidos]
+--==--==--==--==--==--</pre>
+        </div>`;
+        modal.classList.add('show');
+        setTimeout(()=>document.querySelector('.app').classList.remove('error-glitch'),800);
+        // quando fechar, quebrar o menu
+        modalClose.dataset.breaksMenu = '1';
         sError && sError.play().catch(()=>{});
         return;
       }
@@ -305,14 +329,17 @@
       modalTitle.textContent = file.name;
       // mostra preview adequado por tipo
       if(file.type==='img'){
-        modalPreview.innerHTML = `<img src="assets/${encodeURIComponent(file.name)}" alt="${escapeHTML(file.name)}" style="max-width:100%;height:auto;border-radius:6px"/>`;
+        const src = file.asset || file.name;
+        modalPreview.innerHTML = `<img src="${src}" alt="${escapeHTML(file.name)}" style="max-width:100%;height:auto;border-radius:6px"/>`;
       } else if(file.type==='audio'){
-        modalPreview.innerHTML = `<audio controls src="sounds/${encodeURIComponent(file.name)}"></audio>`;
+        const src = file.asset || file.name;
+        modalPreview.innerHTML = `<audio controls src="${src}"></audio>`;
       } else if(file.type==='pdf'){
         modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px">PDF — visualização simulada: ${escapeHTML(file.name)}</div>`;
       } else if(file.type==='html'){
-        modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px">HTML corrompido (placeholder):<pre style=\"color:var(--muted);font-size:10px;white-space:pre-wrap\">&lt;!-- conteúdo corrompido --&gt;
-${escapeHTML(file.name)}</pre></div>`;
+        modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px">HTML corrompido (placeholder):<pre style=\"color:var(--muted);font-size:10px;white-space:pre-wrap\">${escapeHTML(file.placeholderText || '[substitua]')}</pre></div>`;
+      } else if(file.type==='txt'){
+        modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px"><pre style=\"color:var(--muted);font-size:11px;white-space:pre-wrap\">${escapeHTML(file.placeholderText || '[substitua pelo texto real]')}</pre></div>`;
       } else {
         modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px">Visualizando: ${escapeHTML(file.name)}<br><small style=\"color:var(--muted)\">${file.date} • ${file.size}</small></div>`;
       }
@@ -329,7 +356,17 @@ ${escapeHTML(file.name)}</pre></div>`;
       setTimeout(()=>{ document.querySelector('.app').classList.remove('error-glitch'); },1200);
     }
 
-    modalClose.addEventListener('click', ()=>{ modal.classList.remove('show'); statusText.textContent = 'Nenhum arquivo aberto'; });
+    modalClose.addEventListener('click', ()=>{
+      modal.classList.remove('show'); statusText.textContent = 'Nenhum arquivo aberto';
+      // se veio do arquivo especial, quebra o menu até recarregar
+      if(modalClose.dataset.breaksMenu === '1'){
+        contextMenu.classList.add('broken');
+        // garble button text
+        contextMenu.querySelectorAll('button').forEach(b=>{ b.textContent = b.textContent.split('').map((c,i)=> i%2? '•': c).join(''); });
+        // remove flag para próximas aberturas
+        delete modalClose.dataset.breaksMenu;
+      }
+    });
 
     /* ======= RENOMEAR / EXCLUIR / DOWNLOAD / PROPRIEDADES (simulações) ======= */
     function doRename(id){
@@ -397,12 +434,9 @@ ${escapeHTML(file.name)}</pre></div>`;
       ambient.volume = 0.12;
       ambient.play().then(()=>{ audioOn = true; audioIcon.src = 'assets/icon-sound-on.svg'; }).catch(()=>{ audioOn = false; audioIcon.src = 'assets/icon-sound-off.svg'; });
     }
-    // Alguns navegadores bloqueiam autoplay — ativar no primeiro gesto do usuário
     function enableAmbientOnGesture(){
       document.addEventListener('pointerdown', async ()=>{
-        try{
-          ambient.volume = 0.12; await ambient.play(); audioOn = true; audioIcon.src = 'assets/icon-sound-on.svg';
-        }catch(e){ audioOn = false; audioIcon.src = 'assets/icon-sound-off.svg'; }
+        try{ ambient.volume = 0.12; await ambient.play(); audioOn = true; audioIcon.src = 'assets/icon-sound-on.svg'; }catch(e){ audioOn = false; audioIcon.src = 'assets/icon-sound-off.svg'; }
       }, {once:true});
     }
     enableAmbientOnGesture();
@@ -417,7 +451,6 @@ ${escapeHTML(file.name)}</pre></div>`;
     /* ======= TRANSIÇÃO DE ENTRADA (fade + glitch) ======= */
     window.addEventListener('load', ()=>{
       document.body.classList.add('loaded');
-      // entrada leve com glitch (desaparece em 600ms)
       document.querySelector('.app').classList.add('error-glitch');
       setTimeout(()=>document.querySelector('.app').classList.remove('error-glitch'),600);
       renderFiles(files);
