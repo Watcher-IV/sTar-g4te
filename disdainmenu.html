@@ -66,29 +66,29 @@
     @keyframes modal-in{from{opacity:0;transform:translate(-50%,-50%) scale(0.98)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
     .modal .preview{max-height:60vh;overflow:auto}
     .modal .title{font-size:12px;margin-bottom:6px}
-    /* glitch visual suave: curta e repetida poucas vezes */
-    .glitch-anim{animation:glitch 700ms steps(2) 3; will-change:transform,filter}
+    .glitch-anim{animation:glitch 700ms steps(2) 1; will-change:transform,filter}
     @keyframes glitch{
       0%{transform:translateX(0);filter:contrast(1)}
       20%{transform:translateX(-4px) skewX(-4deg);filter:hue-rotate(-6deg) contrast(0.95)}
-      50%{transform:translateX(4px) skewX(4deg);filter:hue-rotate(6deg) contrast(0.92)}
+      50%{transform:translateX(4px)  skewX(4deg)  filter:hue-rotate(6deg)  contrast(0.92)}
       80%{transform:translateX(-2px) skewX(-2deg);filter:hue-rotate(-3deg) contrast(0.96)}
       100%{transform:translateX(0);filter:contrast(1)}
     }
 
-    /* SITE EXPLODIDO (estado persistente até reload) */
-    .site-broken .app, .site-broken header, .site-broken footer, .site-broken .content{
-      filter:grayscale(.6) blur(1.2px) contrast(.85) saturate(.7);
-      transform:rotate(-0.6deg) scale(1.01);
-    }
-    .site-broken .file-card{opacity:.65}
-    .site-broken .file-card:hover{transform:none}
-    .site-broken .icon-btn{pointer-events:none;opacity:.5}
-    /* overlay para indicar o site quebrado e permitir reload */
-    #brokenOverlay{position:fixed;inset:0;z-index:4000;background:linear-gradient(180deg,rgba(0,0,0,0.6),rgba(0,0,0,0.85));display:none;align-items:center;justify-content:center;flex-direction:column;padding:20px}
-    #brokenOverlay.show{display:flex}
-    #brokenOverlay .panel{max-width:760px;padding:20px;border-radius:10px;border:1px solid rgba(255,255,255,0.05);background:rgba(0,0,0,0.6);text-align:center}
-    #brokenOverlay button{margin-top:16px;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--light);cursor:pointer}
+    /* ===== CRASH PS1/PS2 (tiles, tearing e pixel feel) ===== */
+    .crash-overlay{position:fixed;inset:0;z-index:5000;pointer-events:none;overflow:visible}
+    .crash-tile{position:absolute;overflow:hidden;background:transparent;will-change:transform,opacity,filter}
+    .crash-tile > .crash-snapshot{position:absolute;left:0;top:0;will-change:transform;pointer-events:none}
+
+    .crash-tear{position:fixed;inset:0;z-index:5200;pointer-events:none;mix-blend-mode:screen;background-image:repeating-linear-gradient(180deg, rgba(0,0,0,0) 0 8px, rgba(0,0,0,0.03) 8px 10px);opacity:0.45; animation:tearMove 10s linear infinite}
+    @keyframes tearMove{from{background-position-y:0}to{background-position-y:120px}}
+
+    .site-broken .app, .site-broken img { image-rendering: pixelated; image-rendering: -moz-crisp-edges; }
+    .site-broken body, .site-broken .app { filter:grayscale(.7) contrast(.85) blur(1.2px) saturate(.6); }
+    .crash-tile.animated { transition: transform 900ms cubic-bezier(.2,.9,.2,1), opacity 900ms ease; }
+    .site-broken * { cursor:default !important; }
+    .site-broken .context-menu, .site-broken button, .site-broken input, .site-broken select, .site-broken textarea { pointer-events: none !important; opacity:0.6; }
+    .scramble-slow { transition: transform 1.2s cubic-bezier(.2,.9,.2,1), opacity 1s; }
 
     /* RODAPÉ */
     footer{height:44px;display:flex;align-items:center;justify-content:space-between;padding:8px 18px;color:var(--muted);font-size:11px}
@@ -170,15 +170,6 @@
     </footer>
   </div>
 
-  <!-- OVERLAY SITE QUEBRADO -->
-  <div id="brokenOverlay" aria-hidden="true">
-    <div class="panel">
-      <h3 style="margin:0 0 8px 0">SISTEMA INSTÁVEL</h3>
-      <div style="color:var(--muted);font-size:12px">Integridade do sistema comprometida. Recarregue a página para restabelecer.</div>
-      <button id="reloadBtn">Recarregar (F5)</button>
-    </div>
-  </div>
-
   <!-- CONTEXT MENU -->
   <div id="contextMenu" class="context-menu" role="menu">
     <button data-action="open">Abrir</button>
@@ -195,11 +186,12 @@
     <div style="text-align:right;margin-top:12px"><button id="modalClose" style="padding:8px 10px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,0.03);color:var(--light);cursor:pointer">Fechar</button></div>
   </div>
 
-  <!-- AUDIO (ambient e efeitos) -->
+  <!-- AUDIO (ambient, crash e efeitos) -->
   <audio id="ambient" loop src="sounds/never-again.mp3" preload="auto"></audio>
   <audio id="sClick" src="sounds/click.wav" preload="auto"></audio>
   <audio id="sOpen" src="sounds/open.wav" preload="auto"></audio>
   <audio id="sError" src="sounds/error.wav" preload="auto"></audio>
+  <audio id="sCrash" src="sounds/crash.wav" preload="auto"></audio>
 
   <script>
     /* ======= DADOS DE EXEMPLO (com placeholders adequados) ======= */
@@ -238,16 +230,15 @@ Evento detectado: organismo psíquico em fenda. Sensores instáveis.
     const sClick = document.getElementById('sClick');
     const sOpen = document.getElementById('sOpen');
     const sError = document.getElementById('sError');
+    const sCrash = document.getElementById('sCrash');
     const audioToggle = document.getElementById('audioToggle');
     const audioIcon = document.getElementById('audioIcon');
-    const brokenOverlay = document.getElementById('brokenOverlay');
-    const reloadBtn = document.getElementById('reloadBtn');
 
     let selected = new Set();
     let currentContextId = null;
 
     /* Variável de controle do arquivo suspeito */
-    let crossTriggered = false; // => se true: ao fechar provoca "explosão" do site
+    let crossTriggered = false; // => se true: ao fechar provoca "crash" do site
 
     /* ======= RENDERIZA ARQUIVOS ======= */
     function renderFiles(list){
@@ -336,7 +327,6 @@ Evento detectado: organismo psíquico em fenda. Sensores instáveis.
       // Evento especial: Крест-Из-Нервов.x
       if(file.name === 'Крест-Из-Нервов.x'){
         crossTriggered = true; // marca que foi aberto
-        // glitch controlado: animar modal com classe curta
         modalTitle.textContent = file.name;
         modalPreview.innerHTML = `<div class="glitch-anim" style="text-align:center;padding:12px;color:var(--light)">
           <img src="assets/placeholder_cross.png" alt="cross" style="max-width:60%;height:auto;border-radius:6px;margin-bottom:12px"/>
@@ -345,11 +335,10 @@ Evento detectado: organismo psíquico em fenda. Sensores instáveis.
 --==--==--==--==--==--</pre>
         </div>`;
         modal.classList.add('show');
-        // efeito visual leve no restante da app por breves 700ms
+        // efeito visual leve no restante da app por breves 900ms
         document.querySelector('.app').classList.add('error-glitch');
         setTimeout(()=>document.querySelector('.app').classList.remove('error-glitch'),900);
         sError && sError.play().catch(()=>{});
-        // não retornar (não abrir preview normal)
         return;
       }
 
@@ -366,11 +355,11 @@ Evento detectado: organismo psíquico em fenda. Sensores instáveis.
       } else if(file.type==='pdf'){
         modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px">PDF — visualização simulada: ${escapeHTML(file.name)}</div>`;
       } else if(file.type==='html'){
-        modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px">HTML corrompido (placeholder):<pre style="color:var(--muted);font-size:10px;white-space:pre-wrap">${escapeHTML(file.placeholderText || '[substitua]')}</pre></div>`;
+        modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px">HTML corrompido (placeholder):<pre style=\"color:var(--muted);font-size:10px;white-space:pre-wrap\">${escapeHTML(file.placeholderText || '[substitua]')}</pre></div>`;
       } else if(file.type==='txt'){
-        modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px"><pre style="color:var(--muted);font-size:11px;white-space:pre-wrap">${escapeHTML(file.placeholderText || '[substitua pelo texto real]')}</pre></div>`;
+        modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px"><pre style=\"color:var(--muted);font-size:11px;white-space:pre-wrap\">${escapeHTML(file.placeholderText || '[substitua pelo texto real]')}</pre></div>`;
       } else {
-        modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px">Visualizando: ${escapeHTML(file.name)}<br><small style="color:var(--muted)">${file.date} • ${file.size}</small></div>`;
+        modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px">Visualizando: ${escapeHTML(file.name)}<br><small style=\"color:var(--muted)\">${file.date} • ${file.size}</small></div>`;
       }
       modal.classList.add('show');
       statusText.textContent = 'Visualizando: ' + file.name;
@@ -379,139 +368,100 @@ Evento detectado: organismo psíquico em fenda. Sensores instáveis.
     function triggerForbiddenEvent(file){
       sError && sError.play().catch(()=>{});
       modalTitle.textContent = 'ERRO: ACESSO NEGADO';
-      modalPreview.innerHTML = `<div style="padding:18px;color:var(--light);text-align:center;font-size:13px">VOCÊ NÃO DEVERIA ESTAR AQUI<br><small style="color:var(--muted)">Evento gerado ao tentar abrir ${escapeHTML(file.name)}</small></div>`;
+      modalPreview.innerHTML = `<div style="padding:18px;color:var(--light);text-align:center;font-size:13px">VOCÊ NÃO DEVERIA ESTAR AQUI<br><small style=\"color:var(--muted)\">Evento gerado ao tentar abrir ${escapeHTML(file.name)}</small></div>`;
       modal.classList.add('show');
       document.querySelector('.app').classList.add('error-glitch');
       setTimeout(()=>{ document.querySelector('.app').classList.remove('error-glitch'); },1200);
     }
 
-    /* EXPLODE O SITE: aplica estado persistente (somente recarregar restaura) */
-    function explodeSite(){
-      // muda estado visual geral
-      document.documentElement.classList.add('site-broken'); // global marker
-      // quebra o menu de contexto
-      contextMenu.classList.add('broken');
-      // embaralha texto dos botões do menu
-      contextMenu.querySelectorAll('button').forEach(b=>{
-        const txt = b.textContent;
-        // garble: substitui caracteres alternados por bolinhas mantendo comprimento
-        b.textContent = txt.split('').map((c,i)=> i%2? '•' : c).join('');
-      });
-      // desativa inputs e botões (simulação de travamento)
-      document.querySelectorAll('button,input,select,textarea').forEach(el=>{
-        try{ el.disabled = true; }catch(e){}
-      });
-      // mostra overlay persistente com instrução para recarregar
-      brokenOverlay.classList.add('show');
-      // tocar som de erro se disponível
-      sError && sError.play().catch(()=>{});
-      // reset flag para caso reabra etc (não permite reativar sem reload)
-      crossTriggered = false;
+    /* ======= CRASH: comportamento profissional PS1/PS2 ======= */
+    function crashSite({rows=4, cols=6, jitter=120} = {}){
+      if(document.documentElement.classList.contains('site-broken')) return;
+      try{ ambient && ambient.pause(); }catch(e){}
+      try{ if(sCrash){ sCrash.currentTime=0; sCrash.volume=1.0; sCrash.play().catch(()=>{});} else if(sError){ sError.currentTime=0; sError.volume=1.0; sError.play().catch(()=>{});} }catch(e){}
+      document.documentElement.classList.add('site-broken');
+
+      const overlay = document.createElement('div'); overlay.className='crash-overlay'; document.body.appendChild(overlay);
+      const tear = document.createElement('div'); tear.className='crash-tear'; document.body.appendChild(tear);
+
+      const appEl = document.querySelector('.app');
+      if(!appEl){ freezeAllInteractions(); return; }
+      const rect = appEl.getBoundingClientRect();
+      const tileW = Math.ceil(rect.width / cols); const tileH = Math.ceil(rect.height / rows);
+      const frag = document.createDocumentFragment();
+
+      for(let r=0;r<rows;r++){
+        for(let c=0;c<cols;c++){
+          const tile = document.createElement('div'); tile.className='crash-tile';
+          tile.style.width = tileW+'px'; tile.style.height = tileH+'px';
+          tile.style.left = (rect.left + c*tileW) + 'px'; tile.style.top = (rect.top + r*tileH) + 'px';
+          tile.style.zIndex = 5100 + r*cols + c;
+
+          const snap = appEl.cloneNode(true); snap.classList.add('crash-snapshot');
+          snap.style.width = rect.width+'px'; snap.style.height = rect.height+'px'; snap.style.left='0px'; snap.style.top='0px';
+          snap.style.transform = `translate(${-c*tileW}px, ${-r*tileH}px)`; snap.style.position='absolute'; snap.style.pointerEvents='none';
+
+          tile.appendChild(snap); frag.appendChild(tile);
+
+          (function(t){ requestAnimationFrame(()=>{ t.classList.add('animated'); const dx = Math.round((Math.random()*jitter) - jitter/2); const dy = Math.round((Math.random()*(jitter/2)) - jitter/4); const rot = (Math.random()*10 - 5).toFixed(2); const hue = Math.round(Math.random()*8 - 4); t.style.transform = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`; t.style.filter = `hue-rotate(${hue}deg) contrast(${0.9 + Math.random()*0.2})`; t.style.opacity = (0.35 + Math.random()*0.7).toString(); }); })(tile);
+        }
+      }
+      overlay.appendChild(frag);
+
+      function stopAll(e){ e.stopPropagation(); e.preventDefault(); }
+      window.addEventListener('click', stopAll, true); window.addEventListener('pointerdown', stopAll, true); window.addEventListener('keydown', stopAll, true);
+      window.__crashListeners = { stopAll };
+
+      document.body.animate([{ transform:'translateY(0px)' },{ transform:'translateY(-6px)' },{ transform:'translateY(3px)' },{ transform:'translateY(0px)' }], { duration:700, iterations:1, easing:'cubic-bezier(.2,.9,.2,1)' });
+      try{ modal.classList.remove('show'); contextMenu.style.display='none'; }catch(e){}
     }
 
+    function freezeAllInteractions(){ document.documentElement.classList.add('site-broken'); document.querySelectorAll('button,input,select,textarea,a').forEach(el=>el.setAttribute('disabled','disabled')); try{ ambient && ambient.pause(); }catch(e){} if(sError) try{ sError.play().catch(()=>{}); }catch(e){} }
+
+    /* ======= modal close: se arquivo especial foi aberto, crasha sem mensagens ======= */
     modalClose.addEventListener('click', ()=>{
       modal.classList.remove('show'); statusText.textContent = 'Nenhum arquivo aberto';
-      // se veio do arquivo especial, explode o site
-      if(crossTriggered){
-        // ligeiro delay para o usuário sentir o fechamento antes da explosão
-        setTimeout(()=> explodeSite(), 260);
-      }
+      if(crossTriggered){ setTimeout(()=> crashSite(), 260); }
     });
 
     /* ======= RENOMEAR / EXCLUIR / DOWNLOAD / PROPRIEDADES (simulações) ======= */
-    function doRename(id){
-      const file = files.find(f=>f.id===id);
-      const novo = prompt('Renomear arquivo', file.name);
-      if(novo){ file.name = novo; renderFiles(files); }
-    }
-    function doDelete(id){
-      if(!confirm('Excluir arquivo?')) return;
-      const idx = files.findIndex(f=>f.id===id); if(idx>=0) files.splice(idx,1);
-      renderFiles(files);
-    }
-    function doDownload(id){
-      const file = files.find(f=>f.id===id);
-      const blob = new Blob(["Conteúdo simulado: " + file.name], {type:'text/plain'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = file.name; a.click(); URL.revokeObjectURL(url);
-    }
-    function showProperties(id){
-      const file = files.find(f=>f.id===id);
-      modalTitle.textContent = 'Propriedades — ' + file.name;
-      modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px">
+    function doRename(id){ const file = files.find(f=>f.id===id); const novo = prompt('Renomear arquivo', file.name); if(novo){ file.name = novo; renderFiles(files); } }
+    function doDelete(id){ if(!confirm('Excluir arquivo?')) return; const idx = files.findIndex(f=>f.id===id); if(idx>=0) files.splice(idx,1); renderFiles(files); }
+    function doDownload(id){ const file = files.find(f=>f.id===id); const blob = new Blob(["Conteúdo simulado: " + file.name], {type:'text/plain'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = file.name; a.click(); URL.revokeObjectURL(url); }
+    function showProperties(id){ const file = files.find(f=>f.id===id); modalTitle.textContent = 'Propriedades — ' + file.name; modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px">
         Nome: ${escapeHTML(file.name)}<br>
         Tipo: ${escapeHTML(file.type)}<br>
         Data: ${escapeHTML(file.date)}<br>
         Tamanho: ${escapeHTML(file.size)}<br>
         Suspeito: ${file.suspicious? 'Sim':'Não'}
-      </div>`;
-      modal.classList.add('show');
-    }
+      </div>`; modal.classList.add('show'); }
 
     /* ======= BUSCA / ORDENAÇÃO ======= */
-    document.getElementById('search').addEventListener('input', (e)=>{
-      const q = e.target.value.toLowerCase();
-      const list = files.filter(f=> f.name.toLowerCase().includes(q) || f.type.toLowerCase().includes(q));
-      renderFiles(list);
-    });
-    document.getElementById('sort').addEventListener('change',(e)=>{
-      const v = e.target.value; let list = [...files];
-      if(v==='name') list.sort((a,b)=>a.name.localeCompare(b.name));
-      if(v==='date') list.sort((a,b)=> new Date(b.date) - new Date(a.date));
-      if(v==='size') list.sort((a,b)=> parseSize(b.size) - parseSize(a.size));
-      renderFiles(list);
-    });
+    document.getElementById('search').addEventListener('input', (e)=>{ const q = e.target.value.toLowerCase(); const list = files.filter(f=> f.name.toLowerCase().includes(q) || f.type.toLowerCase().includes(q)); renderFiles(list); });
+    document.getElementById('sort').addEventListener('change',(e)=>{ const v = e.target.value; let list = [...files]; if(v==='name') list.sort((a,b)=>a.name.localeCompare(b.name)); if(v==='date') list.sort((a,b)=> new Date(b.date) - new Date(a.date)); if(v==='size') list.sort((a,b)=> parseSize(b.size) - parseSize(a.size)); renderFiles(list); });
 
     function parseSize(s){ if(!s) return 0; if(s.includes('MB')) return parseFloat(s)*1024; if(s.includes('KB')) return parseFloat(s); return 0; }
 
-    function escapeHTML(str){ return String(str).replace(/[&<>"']/g, tag=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[tag])); }
+    function escapeHTML(str){ return String(str).replace(/[&<>\"']/g, tag=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[tag])); }
 
     /* ======= RELOGIO (segundos pares) ======= */
-    function evenClockTick(el){
-      const now = new Date();
-      const hh = String(now.getHours()).padStart(2,'0');
-      const mm = String(now.getMinutes()).padStart(2,'0');
-      const secEven = String(Math.floor(now.getSeconds()/2)*2).padStart(2,'0');
-      el.textContent = `${hh}:${mm}:${secEven}`;
-    }
+    function evenClockTick(el){ const now = new Date(); const hh = String(now.getHours()).padStart(2,'0'); const mm = String(now.getMinutes()).padStart(2,'0'); const secEven = String(Math.floor(now.getSeconds()/2)*2).padStart(2,'0'); el.textContent = `${hh}:${mm}:${secEven}`; }
     setInterval(()=>evenClockTick(document.getElementById('clock')),500);
     evenClockTick(document.getElementById('clock'));
 
     /* ======= AUDIO & CONTROLES ======= */
     let audioOn = false;
-    function tryPlayAmbient(){
-      ambient.volume = 0.12;
-      ambient.play().then(()=>{ audioOn = true; audioIcon.src = 'assets/icon-sound-on.svg'; }).catch(()=>{ audioOn = false; audioIcon.src = 'assets/icon-sound-off.svg'; });
-    }
-    function enableAmbientOnGesture(){
-      document.addEventListener('pointerdown', async ()=>{
-        try{ ambient.volume = 0.12; await ambient.play(); audioOn = true; audioIcon.src = 'assets/icon-sound-on.svg'; }catch(e){ audioOn = false; audioIcon.src = 'assets/icon-sound-off.svg'; }
-      }, {once:true});
-    }
-    enableAmbientOnGesture();
-    tryPlayAmbient();
+    function tryPlayAmbient(){ ambient.volume = 0.12; ambient.play().then(()=>{ audioOn = true; audioIcon.src = 'assets/icon-sound-on.svg'; }).catch(()=>{ audioOn = false; audioIcon.src = 'assets/icon-sound-off.svg'; }); }
+    function enableAmbientOnGesture(){ document.addEventListener('pointerdown', async ()=>{ try{ ambient.volume = 0.12; await ambient.play(); audioOn = true; audioIcon.src = 'assets/icon-sound-on.svg'; }catch(e){ audioOn = false; audioIcon.src = 'assets/icon-sound-off.svg'; } }, {once:true}); }
+    enableAmbientOnGesture(); tryPlayAmbient();
 
-    audioToggle.addEventListener('click', ()=>{
-      audioOn = !audioOn;
-      if(audioOn){ ambient.play().catch(()=>{}); audioIcon.src='assets/icon-sound-on.svg'; }
-      else{ ambient.pause(); audioIcon.src='assets/icon-sound-off.svg'; }
-    });
+    audioToggle.addEventListener('click', ()=>{ audioOn = !audioOn; if(audioOn){ ambient.play().catch(()=>{}); audioIcon.src='assets/icon-sound-on.svg'; } else{ ambient.pause(); audioIcon.src='assets/icon-sound-off.svg'; } });
 
     /* ======= TRANSIÇÃO DE ENTRADA (fade + glitch) ======= */
-    window.addEventListener('load', ()=>{
-      document.body.classList.add('loaded');
-      document.querySelector('.app').classList.add('error-glitch');
-      setTimeout(()=>document.querySelector('.app').classList.remove('error-glitch'),600);
-      renderFiles(files);
-    });
+    window.addEventListener('load', ()=>{ document.body.classList.add('loaded'); document.querySelector('.app').classList.add('error-glitch'); setTimeout(()=>document.querySelector('.app').classList.remove('error-glitch'),600); renderFiles(files); });
 
     /* ======= BOTÕES GLOBAIS ======= */
-    document.getElementById('selectAll').addEventListener('click', ()=>{
-      selected = new Set(files.map(f=>f.id)); document.querySelectorAll('.file-card').forEach(c=>c.classList.add('selected')); updateStatus(); sClick && sClick.play().catch(()=>{});
-    });
-
-    /* RELOAD BUTTON ON BROKEN OVERLAY */
-    reloadBtn.addEventListener('click', ()=>{ location.reload(); });
+    document.getElementById('selectAll').addEventListener('click', ()=>{ selected = new Set(files.map(f=>f.id)); document.querySelectorAll('.file-card').forEach(c=>c.classList.add('selected')); updateStatus(); sClick && sClick.play().catch(()=>{}); });
 
     /* ======= UTILIDADES FINAIS ======= */
     function parseSizeValue(s){ if(!s) return 0; if(s.includes('MB')) return parseFloat(s)*1024; if(s.includes('KB')) return parseFloat(s); return 0; }
