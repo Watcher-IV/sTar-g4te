@@ -56,25 +56,39 @@
 
     /* CONTEXT MENU */
     .context-menu{position:fixed;z-index:2000;background:#0b0b0b;border:1px solid rgba(217,217,217,0.12);padding:6px;border-radius:6px;display:none;min-width:160px;box-shadow:0 8px 40px rgba(0,0,0,0.7)}
-    .context-menu.broken{pointer-events:none;opacity:0.5;transform:skewX(-6deg);filter:blur(1px) hue-rotate(-20deg)}
+    .context-menu.broken{pointer-events:none;opacity:0.4;transform:skewX(-8deg) translateY(6px);filter:blur(1px) hue-rotate(-30deg)}
     .context-menu button{display:block;width:100%;padding:8px 10px;background:transparent;color:var(--light);border:none;text-align:left;font-size:12px;cursor:pointer}
     .context-menu button:hover{background:rgba(255,255,255,0.02)}
 
-    /* MODAL PREVIEW + GLITCH */
+    /* MODAL PREVIEW + GLITCH (mais controlado) */
     .modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(0.98);min-width:360px;max-width:92vw;background:var(--glass);border-radius:10px;padding:18px;z-index:1500;display:none;box-shadow:0 14px 60px rgba(0,0,0,0.8)}
     .modal.show{display:block;animation:modal-in .28s ease forwards}
     @keyframes modal-in{from{opacity:0;transform:translate(-50%,-50%) scale(0.98)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
     .modal .preview{max-height:60vh;overflow:auto}
     .modal .title{font-size:12px;margin-bottom:6px}
-    .glitch-anim{animation:glitch 700ms steps(2) infinite}
+    /* glitch visual suave: curta e repetida poucas vezes */
+    .glitch-anim{animation:glitch 700ms steps(2) 3; will-change:transform,filter}
     @keyframes glitch{
-      0%{transform:translateX(0)}
-      20%{transform:translateX(-6px) skewX(-6deg)}
-      40%{transform:translateX(6px) skewX(6deg)}
-      60%{transform:translateX(-4px) skewX(-3deg)}
-      80%{transform:translateX(4px) skewX(3deg)}
-      100%{transform:translateX(0)}
+      0%{transform:translateX(0);filter:contrast(1)}
+      20%{transform:translateX(-4px) skewX(-4deg);filter:hue-rotate(-6deg) contrast(0.95)}
+      50%{transform:translateX(4px) skewX(4deg);filter:hue-rotate(6deg) contrast(0.92)}
+      80%{transform:translateX(-2px) skewX(-2deg);filter:hue-rotate(-3deg) contrast(0.96)}
+      100%{transform:translateX(0);filter:contrast(1)}
     }
+
+    /* SITE EXPLODIDO (estado persistente até reload) */
+    .site-broken .app, .site-broken header, .site-broken footer, .site-broken .content{
+      filter:grayscale(.6) blur(1.2px) contrast(.85) saturate(.7);
+      transform:rotate(-0.6deg) scale(1.01);
+    }
+    .site-broken .file-card{opacity:.65}
+    .site-broken .file-card:hover{transform:none}
+    .site-broken .icon-btn{pointer-events:none;opacity:.5}
+    /* overlay para indicar o site quebrado e permitir reload */
+    #brokenOverlay{position:fixed;inset:0;z-index:4000;background:linear-gradient(180deg,rgba(0,0,0,0.6),rgba(0,0,0,0.85));display:none;align-items:center;justify-content:center;flex-direction:column;padding:20px}
+    #brokenOverlay.show{display:flex}
+    #brokenOverlay .panel{max-width:760px;padding:20px;border-radius:10px;border:1px solid rgba(255,255,255,0.05);background:rgba(0,0,0,0.6);text-align:center}
+    #brokenOverlay button{margin-top:16px;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--light);cursor:pointer}
 
     /* RODAPÉ */
     footer{height:44px;display:flex;align-items:center;justify-content:space-between;padding:8px 18px;color:var(--muted);font-size:11px}
@@ -156,6 +170,15 @@
     </footer>
   </div>
 
+  <!-- OVERLAY SITE QUEBRADO -->
+  <div id="brokenOverlay" aria-hidden="true">
+    <div class="panel">
+      <h3 style="margin:0 0 8px 0">SISTEMA INSTÁVEL</h3>
+      <div style="color:var(--muted);font-size:12px">Integridade do sistema comprometida. Recarregue a página para restabelecer.</div>
+      <button id="reloadBtn">Recarregar (F5)</button>
+    </div>
+  </div>
+
   <!-- CONTEXT MENU -->
   <div id="contextMenu" class="context-menu" role="menu">
     <button data-action="open">Abrir</button>
@@ -217,9 +240,14 @@ Evento detectado: organismo psíquico em fenda. Sensores instáveis.
     const sError = document.getElementById('sError');
     const audioToggle = document.getElementById('audioToggle');
     const audioIcon = document.getElementById('audioIcon');
+    const brokenOverlay = document.getElementById('brokenOverlay');
+    const reloadBtn = document.getElementById('reloadBtn');
 
     let selected = new Set();
     let currentContextId = null;
+
+    /* Variável de controle do arquivo suspeito */
+    let crossTriggered = false; // => se true: ao fechar provoca "explosão" do site
 
     /* ======= RENDERIZA ARQUIVOS ======= */
     function renderFiles(list){
@@ -307,20 +335,21 @@ Evento detectado: organismo psíquico em fenda. Sensores instáveis.
       if(!file) return;
       // Evento especial: Крест-Из-Нервов.x
       if(file.name === 'Крест-Из-Нервов.x'){
-        // pisca a tela e altera sutilmente o menu
-        document.querySelector('.app').classList.add('error-glitch');
+        crossTriggered = true; // marca que foi aberto
+        // glitch controlado: animar modal com classe curta
         modalTitle.textContent = file.name;
-        modalPreview.innerHTML = `<div class=\"glitch-anim\" style=\"text-align:center;padding:12px;color:var(--light)\">
-          <img src=\"assets/placeholder_cross.png\" alt=\"cross\" style=\"max-width:60%;height:auto;border-radius:6px;margin-bottom:12px\"/>
-          <div style=\"font-size:12px;color:var(--muted)\">ALERTA — Instabilidade detectada.</div>
-          <pre style=\"color:var(--light);font-size:11px;white-space:pre-wrap;margin-top:8px\">[dados corrompidos]
+        modalPreview.innerHTML = `<div class="glitch-anim" style="text-align:center;padding:12px;color:var(--light)">
+          <img src="assets/placeholder_cross.png" alt="cross" style="max-width:60%;height:auto;border-radius:6px;margin-bottom:12px"/>
+          <div style="font-size:12px;color:var(--muted)">ALERTA — Instabilidade detectada.</div>
+          <pre style="color:var(--light);font-size:11px;white-space:pre-wrap;margin-top:8px">[dados corrompidos]
 --==--==--==--==--==--</pre>
         </div>`;
         modal.classList.add('show');
-        setTimeout(()=>document.querySelector('.app').classList.remove('error-glitch'),800);
-        // quando fechar, quebrar o menu
-        modalClose.dataset.breaksMenu = '1';
+        // efeito visual leve no restante da app por breves 700ms
+        document.querySelector('.app').classList.add('error-glitch');
+        setTimeout(()=>document.querySelector('.app').classList.remove('error-glitch'),900);
         sError && sError.play().catch(()=>{});
+        // não retornar (não abrir preview normal)
         return;
       }
 
@@ -337,11 +366,11 @@ Evento detectado: organismo psíquico em fenda. Sensores instáveis.
       } else if(file.type==='pdf'){
         modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px">PDF — visualização simulada: ${escapeHTML(file.name)}</div>`;
       } else if(file.type==='html'){
-        modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px">HTML corrompido (placeholder):<pre style=\"color:var(--muted);font-size:10px;white-space:pre-wrap\">${escapeHTML(file.placeholderText || '[substitua]')}</pre></div>`;
+        modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px">HTML corrompido (placeholder):<pre style="color:var(--muted);font-size:10px;white-space:pre-wrap">${escapeHTML(file.placeholderText || '[substitua]')}</pre></div>`;
       } else if(file.type==='txt'){
-        modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px"><pre style=\"color:var(--muted);font-size:11px;white-space:pre-wrap\">${escapeHTML(file.placeholderText || '[substitua pelo texto real]')}</pre></div>`;
+        modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px"><pre style="color:var(--muted);font-size:11px;white-space:pre-wrap">${escapeHTML(file.placeholderText || '[substitua pelo texto real]')}</pre></div>`;
       } else {
-        modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px">Visualizando: ${escapeHTML(file.name)}<br><small style=\"color:var(--muted)\">${file.date} • ${file.size}</small></div>`;
+        modalPreview.innerHTML = `<div style="padding:12px;color:var(--light);font-size:12px">Visualizando: ${escapeHTML(file.name)}<br><small style="color:var(--muted)">${file.date} • ${file.size}</small></div>`;
       }
       modal.classList.add('show');
       statusText.textContent = 'Visualizando: ' + file.name;
@@ -350,21 +379,42 @@ Evento detectado: organismo psíquico em fenda. Sensores instáveis.
     function triggerForbiddenEvent(file){
       sError && sError.play().catch(()=>{});
       modalTitle.textContent = 'ERRO: ACESSO NEGADO';
-      modalPreview.innerHTML = `<div style="padding:18px;color:var(--light);text-align:center;font-size:13px">VOCÊ NÃO DEVERIA ESTAR AQUI<br><small style=\"color:var(--muted)\">Evento gerado ao tentar abrir ${escapeHTML(file.name)}</small></div>`;
+      modalPreview.innerHTML = `<div style="padding:18px;color:var(--light);text-align:center;font-size:13px">VOCÊ NÃO DEVERIA ESTAR AQUI<br><small style="color:var(--muted)">Evento gerado ao tentar abrir ${escapeHTML(file.name)}</small></div>`;
       modal.classList.add('show');
       document.querySelector('.app').classList.add('error-glitch');
       setTimeout(()=>{ document.querySelector('.app').classList.remove('error-glitch'); },1200);
     }
 
+    /* EXPLODE O SITE: aplica estado persistente (somente recarregar restaura) */
+    function explodeSite(){
+      // muda estado visual geral
+      document.documentElement.classList.add('site-broken'); // global marker
+      // quebra o menu de contexto
+      contextMenu.classList.add('broken');
+      // embaralha texto dos botões do menu
+      contextMenu.querySelectorAll('button').forEach(b=>{
+        const txt = b.textContent;
+        // garble: substitui caracteres alternados por bolinhas mantendo comprimento
+        b.textContent = txt.split('').map((c,i)=> i%2? '•' : c).join('');
+      });
+      // desativa inputs e botões (simulação de travamento)
+      document.querySelectorAll('button,input,select,textarea').forEach(el=>{
+        try{ el.disabled = true; }catch(e){}
+      });
+      // mostra overlay persistente com instrução para recarregar
+      brokenOverlay.classList.add('show');
+      // tocar som de erro se disponível
+      sError && sError.play().catch(()=>{});
+      // reset flag para caso reabra etc (não permite reativar sem reload)
+      crossTriggered = false;
+    }
+
     modalClose.addEventListener('click', ()=>{
       modal.classList.remove('show'); statusText.textContent = 'Nenhum arquivo aberto';
-      // se veio do arquivo especial, quebra o menu até recarregar
-      if(modalClose.dataset.breaksMenu === '1'){
-        contextMenu.classList.add('broken');
-        // garble button text
-        contextMenu.querySelectorAll('button').forEach(b=>{ b.textContent = b.textContent.split('').map((c,i)=> i%2? '•': c).join(''); });
-        // remove flag para próximas aberturas
-        delete modalClose.dataset.breaksMenu;
+      // se veio do arquivo especial, explode o site
+      if(crossTriggered){
+        // ligeiro delay para o usuário sentir o fechamento antes da explosão
+        setTimeout(()=> explodeSite(), 260);
       }
     });
 
@@ -414,7 +464,6 @@ Evento detectado: organismo psíquico em fenda. Sensores instáveis.
 
     function parseSize(s){ if(!s) return 0; if(s.includes('MB')) return parseFloat(s)*1024; if(s.includes('KB')) return parseFloat(s); return 0; }
 
-    /* ======= UTILIDADES ======= */
     function escapeHTML(str){ return String(str).replace(/[&<>"']/g, tag=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[tag])); }
 
     /* ======= RELOGIO (segundos pares) ======= */
@@ -460,6 +509,9 @@ Evento detectado: organismo psíquico em fenda. Sensores instáveis.
     document.getElementById('selectAll').addEventListener('click', ()=>{
       selected = new Set(files.map(f=>f.id)); document.querySelectorAll('.file-card').forEach(c=>c.classList.add('selected')); updateStatus(); sClick && sClick.play().catch(()=>{});
     });
+
+    /* RELOAD BUTTON ON BROKEN OVERLAY */
+    reloadBtn.addEventListener('click', ()=>{ location.reload(); });
 
     /* ======= UTILIDADES FINAIS ======= */
     function parseSizeValue(s){ if(!s) return 0; if(s.includes('MB')) return parseFloat(s)*1024; if(s.includes('KB')) return parseFloat(s); return 0; }
